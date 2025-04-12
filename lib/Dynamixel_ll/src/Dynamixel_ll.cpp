@@ -303,3 +303,49 @@ void DynamixelLL::setDebug(bool enable)
 {
     _debug = enable;
 }
+
+void DynamixelLL::setGoalPosition(uint32_t goalPosition)
+{
+    writeRegister(116, goalPosition, 4); // Address 30, Value 1, Size 2 byte
+    return;
+}
+
+
+
+void DynamixelLL::setTorqueEnable( bool enable)
+{
+    uint8_t value = enable ? 1 : 0;
+    writeRegister(64, value, 1); // Torque Enable, 1 byte
+    return;
+}
+
+
+void DynamixelLL::setLED( bool enable)
+{
+    uint8_t value = enable ? 1 : 0;
+    writeRegister(65, value, 1); // LED, 1 byte
+    return;
+}
+
+
+void DynamixelLL::setStatusReturnLevel(uint8_t level)
+{
+    writeRegister(68, level, 1); // Status Return Level, 1 byte
+    return;
+}
+
+void DynamixelLL::setBaudRate(uint32_t baudRate)
+{
+    writeRegister(8, baudRate, 4); // Baud Rate, 4 byte
+    return;
+}
+void DynamixelLL::setReturnDelayTime(uint32_t delayTime)
+{
+    writeRegister(5, delayTime, 4); // Return Delay Time, 4 byte
+    return;
+}
+void DynamixelLL::getPresentPosition(uint32_t &presentPosition)
+{
+    readRegister(132, presentPosition, 4); // Address 132, Size 4 byte
+    return;
+}
