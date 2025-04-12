@@ -1,7 +1,7 @@
 #include "Dynamixel_ll.h"
 
-DynamixelLL motor1(Serial1, 1);  // ID = 1
-DynamixelLL motor2(Serial1, 2);  // ID = 2
+DynamixelLL motor1(Serial1, 210);  // ID = 1
+DynamixelLL motor2(Serial1, 211);  // ID = 2
 int pos1 = 2047; // Posizione iniziale del motore 1
 int pos2 = 2048; // Posizione iniziale del motore 2
 int step = 50;  // Incremento/decremento per ogni pressione del tasto
