@@ -14,12 +14,12 @@ void DynamixelLL::ledOff() {
 
     };
 
-    uint16_t crc = calculateCRC(packet, 11);  // Calcola CRC sui primi 11 byte
-    packet[11] = crc & 0xFF;        // CRC LSB
-    packet[12] = (crc >> 8) & 0xFF; // CRC MSB
+    uint16_t crc = calculateCRC(packet, 11);
+    packet[11] = crc & 0xFF;
+    packet[12] = (crc >> 8) & 0xFF;
 
     sendPacket(packet, 13);
-    delay(time_delay); // Attendi time_delayms per la risposta
+    delay(time_delay);
 }
 
 
@@ -85,7 +85,8 @@ uint16_t DynamixelLL::calculateCRC(const uint8_t* data_blk_ptr, size_t data_blk_
 
 
 
-void DynamixelLL::writeRegister(uint16_t address, uint32_t value, uint8_t size) {
+
+  void DynamixelLL::writeRegister(uint16_t address, uint32_t value, uint8_t size) {
     // Calcolo lunghezza del pacchetto: header (4) + ID (1) + lunghezza (2) + istruzione (1) + indirizzo (2) + valore (1/2/4)
     uint16_t length = 5 + size;
     uint8_t packet[10 + size]; // header + id + length + instruction + address + data + crc
@@ -123,5 +124,78 @@ void DynamixelLL::writeRegister(uint16_t address, uint32_t value, uint8_t size) 
 
     // Invio del pacchetto
     sendPacket(packet, lenNoCRC + 2);  // Invia il pacchetto con CRC
-    delay(time_delay);
+
+    readResponse();
+    delay(time_delay); // Attendi un attimo per la risposta
+}
+
+bool DynamixelLL::readRegister(uint16_t address, uint32_t& value, uint8_t size) {
+    uint8_t packet[14];
+    uint16_t length = 7; // Istruzione + indirizzo(2) + size(2) + CRC(2)
+    uint8_t N = 100; // Dimensione massima della risposta
+    // Header
+    packet[0] = 0xFF;
+    packet[1] = 0xFF;
+    packet[2] = 0xFD;
+    packet[3] = 0x00;
+
+    // ID
+    packet[4] = _servoID;
+
+    // Lunghezza (istruzione + parametri)
+    packet[5] = length & 0xFF;
+    packet[6] = (length >> 8) & 0xFF;
+
+    // Istruzione: READ
+    packet[7] = 0x02;
+
+    // Indirizzo LSB/MSB
+    packet[8] = address & 0xFF;
+    packet[9] = (address >> 8) & 0xFF;
+
+    // Size (numero di byte da leggere)
+    packet[10] = size & 0xFF;
+    packet[11] = (size >> 8) & 0xFF;
+
+    // CRC
+    uint16_t crc = calculateCRC(packet, 12);
+    packet[12] = crc & 0xFF;
+    packet[13] = (crc >> 8) & 0xFF;
+    uint8_t response[100]; // abbastanza per una risposta con 4 byte
+    uint8_t response2[100]; // abbastanza per una risposta con 4 byte
+    size_t len = 0;
+    size_t len2 = 0;
+    // Invio
+    sendPacket(packet, 14);
+    readResponse();
+    delay(time_delay); // Attendi un attimo per la risposta
+
+return 0;
+
+}
+
+
+void DynamixelLL::readResponse() {
+    // Pulisce eventuali byte rimasti nel buffer prima di leggere la risposta
+    while (_serial.available()) {
+        _serial.read();  // Consuma i byte nel buffer
+    }
+
+    unsigned long startMillis = millis();
+    unsigned long timeout = 1000;  // Timeout di 1 secondo per la lettura
+
+    Serial.println("Inizio lettura risposta:");
+
+    // Legge i byte dalla seriale
+    while (millis() - startMillis < timeout) {
+        if (_serial.available()) {
+            uint8_t byte = _serial.read();
+            Serial.print("0x");
+            if (byte < 0x10) Serial.print("0");
+            Serial.print(byte, HEX);
+            Serial.print(" ");
+        }
+    }
+
+    Serial.println("\nFine lettura risposta");
 }
