@@ -15,7 +15,7 @@ void setup() {
   Serial1.setRX(1);
   motor1.begin(57600);
   motor2.begin(57600);
-
+ // motor1.setDebug(true);  // Attiva le stampe di debug
   delay(1000);
 
 

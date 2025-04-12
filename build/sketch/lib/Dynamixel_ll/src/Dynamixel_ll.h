@@ -3,6 +3,12 @@
 #define DYNAMIXEL_LL_H
 
 #include <Arduino.h>
+struct StatusPacket {
+    bool valid;
+    uint8_t error;
+    uint8_t data[4]; // Max 4 byte
+    uint8_t dataLength;
+};
 
 class DynamixelLL {
 public:
@@ -14,12 +20,15 @@ public:
     void writeRegister(uint16_t address, uint32_t value, uint8_t size);
     bool readRegister(uint16_t address, uint32_t &value, uint8_t size) ;
     void readResponse();
+    StatusPacket readStatusPacket(uint8_t expectedParams);
+    void setDebug(bool enable);
 
 private:
 
     HardwareSerial& _serial;
     uint8_t _servoID;
     uint16_t calculateCRC(const uint8_t* data, size_t length);
+    bool _debug = false;
 
 };
 
