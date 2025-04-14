@@ -1,61 +1,40 @@
 #include "Dynamixel_ll.h"
 
-DynamixelLL motor1(Serial1, 211); // ID = 1
-DynamixelLL motor2(Serial1, 212); // ID = 2
-int pos1 = 2047;                  // Posizione iniziale del motore 1
-int pos2 = 2048;                  // Posizione iniziale del motore 2
-int step = 50;                    // Incremento/decremento per ogni pressione del tasto
-int val = 110;
-uint32_t value = 110;
-void setup()
-{
+DynamixelLL dxl(Serial2, 0); // L'ID in questo caso è irrilevante per il sync write
+
+const uint8_t motorIDs[] = {210, 211}; // ID dei due motori
+const uint8_t numMotors = sizeof(motorIDs) / sizeof(motorIDs[0]);
+uint32_t positions[numMotors];
+
+void setup() {
   Serial.begin(115200);
-  while (!Serial)
-    ;
+  while (!Serial);
 
-  Serial1.setTX(0);
-  Serial1.setRX(1);
-  motor1.begin(57600);
-  motor2.begin(57600);
-  // motor1.setDebug(true);  // Attiva le stampe di debug
+  Serial2.setTX(4);
+  Serial2.setRX(5);
+  dxl.begin(57600);
+
+  // Abilita il torque su entrambi i motori
+  DynamixelLL motor1(Serial2, 211);
+  DynamixelLL motor2(Serial2, 210);
+  motor1.setTorqueEnable(true);
+  motor2.setTorqueEnable(true);
+
   delay(1000);
-
-  motor1.writeRegister(64, 0, 1); // Address 65, Value 1, Size 1 byte
-  delay(1000);
-
-  /*
-    val = motor1.readRegister(65, value , 1);
-    Serial.println("valore letto : " + String(value));
-    Serial.println("valore status : " + String(val));
-  delay(2000);
-  Serial.println("spento");
-    motor1.writeRegister(65, 0, 1);  // Address 65, Value 1, Size 1 byte
-    val = motor1.readRegister(65, value , 1);
-    Serial.println("valore letto : " + String(value));
-    Serial.println("valore status : " + String(val));
-  */
 }
 
-void loop()
-{
-  uint32_t pos1 = 0;
-  motor1.writeRegister(64, 1, 1); // Address 65, Value 1, Size 1 byte
-  motor1.writeRegister(65, 1, 1); // Address 65, Value 1, Size 1 byte
-  delay(1000);
-  val = motor1.readRegister(65, value, 1);
-  Serial.println("valore letto : " + String(value));
-  Serial.println("valore status : " + String(val));
-  motor1.setGoalPosition( 1000);
-  motor1.getPresentPosition(pos1);
-  Serial.println("posizione : " + String(pos1));
-  delay(3000);
-  motor1.writeRegister(65, 0, 1); // Address 65, Value 1, Size 1 byte
-  delay(1000);
-  val = motor1.readRegister(65, value, 1);
-  motor1.setGoalPosition( 0);
-  Serial.println("valore letto : " + String(value));
-  Serial.println("valore status : " + String(val));
-  motor1.getPresentPosition(pos1);
-  Serial.println("posizione : " + String(pos1));
-  delay(5000);
+void loop() {
+  // Movimento in posizione iniziale
+  positions[0] = 0;
+  positions[1] = 0;
+  dxl.syncWriteGoalPositions(motorIDs, positions, numMotors);
+  Serial.println("Posizione iniziale inviata ai motori");
+  delay(2000);
+
+  // Movimento in posizione opposta
+  positions[0] = 4095;
+  positions[1] = 4095;
+  dxl.syncWriteGoalPositions(motorIDs, positions, numMotors);
+  Serial.println("Posizione finale inviata ai motori");
+  delay(2000);
 }
