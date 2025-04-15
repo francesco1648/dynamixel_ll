@@ -12,7 +12,7 @@ public:
     void sendPacket(const uint8_t* packet, size_t length);
     void writeRegister(uint16_t address, uint32_t value, uint8_t size);
     bool setVelocity(uint32_t velocity);
-
+    void syncWrite(uint16_t start_address, uint16_t data_length, const uint8_t* ids, const uint32_t* values, size_t num_servos);
 private:
 
     HardwareSerial& _serial;

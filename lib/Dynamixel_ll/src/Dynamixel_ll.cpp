@@ -129,3 +129,61 @@ bool DynamixelLL::setVelocity(uint32_t velocity) {
      writeRegister(104, velocity, 4);
      return 0;
 }
+
+void DynamixelLL::syncWrite(uint16_t start_address, uint16_t data_length,    const uint8_t* ids, const uint32_t* values, size_t num_servos) {
+// Calcola il numero di byte per la parte variabile relativa ai servomotori:
+// Per ogni servo abbiamo 1 byte (ID) + data_length byte per il dato.
+uint16_t num_data_bytes = num_servos * (1 + data_length);
+
+// I parametri dopo l'istruzione sono:
+// 2 byte per l'indirizzo + 2 byte per data_length + num_data_bytes
+uint16_t params_length = 4 + num_data_bytes;
+
+// I byte compresi dal campo istruzione fino a fine parametri sono:
+// 1 (istruzione) + params_length
+// La lunghezza viene poi definita come questo valore sommato a 2 (per i byte CRC)
+uint16_t length = 1 + params_length + 2; // = 7 + num_servos*(1 + data_length)
+
+// Dimensione totale del pacchetto:
+// Header (4) + ID (1) + Lunghezza (2) + (istruzione+parametri) + CRC (2)
+size_t packet_size = 4 + 1 + 2 + (1 + params_length) + 2;
+
+// Allocazione dinamica del buffer del pacchetto
+uint8_t* packet = new uint8_t[packet_size];
+
+// Costruzione del pacchetto:
+// Header
+packet[0] = 0xFF;
+packet[1] = 0xFF;
+packet[2] = 0xFD;
+packet[3] = 0x00;
+
+// ID: utilizziamo l'ID di broadcast (0xFE) per il sync write
+packet[4] = 0xFE;
+
+// Lunghezza (little endian)
+packet[5] = length & 0xFF;
+packet[6] = (length >> 8) & 0xFF;
+
+// Istruzione: Sync Write (0x83)
+packet[7] = 0x83;
+
+// Parametri:
+// 1. Indirizzo di partenza (2 byte, little endian)
+packet[8] = start_address & 0xFF;
+packet[9] = (start_address >> 8) & 0xFF;
+
+// 2. Lunghezza dei dati per servo (2 byte, little endian)
+packet[10] = data_length & 0xFF;
+packet[11] = (data_length >> 8) & 0xFF;
+
+// 3. Per ogni servo: ID servo (1 byte) + dato (data_length byte, little endian)
+size_t index = 12;
+for (size_t i = 0; i < num_servos; i++) {
+// Inserisce l'ID del servo
+packet[index++] = ids[i];
+// Inserisce il valore nel formato little endian, su data_length byte
+for (uint16_t j = 0; j < data_length; j++) {
+packet[index++] = (values[i] >> (8 * j)) & 0xFF;
+}
+}}
