@@ -1,6 +1,6 @@
 #line 1 "C:\\Users\\Titania\\Desktop\\isaac\\test\\dynamixel_test\\lib\\Dynamixel_ll\\src\\Dynamixel_ll.cpp"
 #include "Dynamixel_ll.h"
-#define time_delay 10
+#define time_delay 200
 DynamixelLL::DynamixelLL(HardwareSerial& serial, uint8_t servoID)
     : _serial(serial), _servoID(servoID) {}
 
@@ -124,4 +124,9 @@ void DynamixelLL::writeRegister(uint16_t address, uint32_t value, uint8_t size) 
     // Invio del pacchetto
     sendPacket(packet, lenNoCRC + 2);  // Invia il pacchetto con CRC
     delay(time_delay);
+}
+
+bool DynamixelLL::setVelocity(uint32_t velocity) {
+     writeRegister(104, velocity, 4);
+     return 0;
 }

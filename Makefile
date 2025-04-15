@@ -22,6 +22,7 @@ COMPILATION_SYMBOL = " Compilation in progress... "
 
 MODULE_DEFINE ?= "MK1_MOD1"
 DESTINATION ?=  'E:\'
+EXTRA_FLAGS ?= -O0 -g
 
 MODULE =
 define print_green
@@ -46,7 +47,21 @@ compile: clean_all
 		$(foreach dir, $(INCLUDE_PATHS), --build-property "compiler.cpp.extra_flags=-I$(dir) -D$(MODULE_DEFINE)")
 
 compile_fast:
-	@arduino-cli compile --fqbn $(BOARD_FQBN) "$(SKETCH_PATH)"
+	@arduino-cli compile --config-file "C:/Users/Titania/AppData/Local/Arduino15/arduino-cli.yaml" \
+		--fqbn $(BOARD_FQBN) \
+		--build-cache-path $(CURDIR)/build/cache \
+		--build-path $(BUILD_DIR) \
+		$(SKETCH_PATH) \
+		--output-dir $(OUTPUT_DIR) \
+		$(LIBRARY_FLAGS) \
+		$(foreach dir, $(INCLUDE_PATHS), --build-property "compiler.cpp.extra_flags=$(EXTRA_FLAGS) -I$(dir) -D$(MODULE_DEFINE)")
+
+
+
+init_cache:
+	@arduino-cli compile --fqbn $(BOARD_FQBN) --build-cache-path $(CURDIR)/build/cache --build-path $(BUILD_DIR) $(SKETCH_PATH) --output-dir $(OUTPUT_DIR) $(LIBRARY_FLAGS) \
+		$(foreach dir, $(INCLUDE_PATHS), --build-property "compiler.cpp.extra_flags=-I$(dir) -D$(MODULE_DEFINE)")
+
 
 # Upload .bin file
 upload:

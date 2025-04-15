@@ -12,6 +12,8 @@ public:
     void ledOff();
     void sendPacket(const uint8_t* packet, size_t length);
     void writeRegister(uint16_t address, uint32_t value, uint8_t size);
+    bool setVelocity(uint32_t velocity);
+
 private:
 
     HardwareSerial& _serial;
