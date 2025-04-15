@@ -33,7 +33,7 @@ public:
     uint8_t ping( uint32_t &value);
     uint8_t setVelocity(uint32_t velocity);
     void setGoalPositionsSync(uint8_t* ids, uint32_t* positions, int count);
-    bool syncWriteGoalPositions(const uint8_t* ids, const uint32_t* positions, uint8_t length)
+    bool syncWriteGoalPositions(const uint8_t* ids, const uint32_t* positions, uint8_t length);
 
 private :
     HardwareSerial &_serial;
