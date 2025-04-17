@@ -315,7 +315,7 @@ void DynamixelLL::setDebug(bool enable)
 
 uint8_t DynamixelLL::setGoalPosition(uint32_t goalPosition)
 {
-    return  writeRegister(116, goalPosition, 4); // Address 30, Value 1, Size 2 byte
+    return  writeRegister(116, goalPosition, 4);
 
 }
 
@@ -324,7 +324,7 @@ uint8_t DynamixelLL::setGoalPosition(uint32_t goalPosition)
 uint8_t DynamixelLL::setTorqueEnable( bool enable)
 {
     uint8_t value = enable ? 1 : 0;
-    return writeRegister(64, value, 1); // Torque Enable, 1 byte
+    return writeRegister(64, value, 1);
 
 }
 
@@ -332,36 +332,36 @@ uint8_t DynamixelLL::setTorqueEnable( bool enable)
 uint8_t DynamixelLL::setLED( bool enable)
 {
     uint8_t value = enable ? 1 : 0;
-     return writeRegister(65, value, 1); // LED, 1 byte
+     return writeRegister(65, value, 1);
 
 }
 
 
 uint8_t DynamixelLL::setStatusReturnLevel(uint8_t level)
 {
-     return writeRegister(68, level, 1); // Status Return Level, 1 byte
+     return writeRegister(68, level, 1);
 
 }
 
 uint8_t DynamixelLL::setBaudRate(uint32_t baudRate)
 {
-     return writeRegister(8, baudRate, 4); // Baud Rate, 4 byte
+     return writeRegister(8, baudRate, 1);
 
 }
 uint8_t DynamixelLL::setReturnDelayTime(uint32_t delayTime)
 {
-     return writeRegister(5, delayTime, 4); // Return Delay Time, 4 byte
+     return writeRegister(9, delayTime, 1);
 
 }
 uint8_t DynamixelLL::getPresentPosition(uint32_t &presentPosition)
 {
-    return  readRegister(132, presentPosition, 4); // Address 132, Size 4 byte
+    return  readRegister(132, presentPosition, 4);
 
 }
 
 uint8_t DynamixelLL::setID(uint8_t newID)
 {
-    return writeRegister(7, newID, 1); // Address 3, Size 1 byte
+    return writeRegister(7, newID, 1);
 }
 
 uint8_t DynamixelLL::ping( uint32_t &value){
@@ -431,7 +431,7 @@ bool DynamixelLL::syncWriteGoalPositions(const uint8_t* ids, const uint32_t* pos
   }
 
 
-  bool DynamixelLL::sendSyncWritePacket(uint16_t address, uint16_t dataLength, const uint8_t* params, uint16_t paramLength) {
+bool DynamixelLL::sendSyncWritePacket(uint16_t address, uint16_t dataLength, const uint8_t* params, uint16_t paramLength) {
     uint8_t packet[10 + paramLength];
     uint16_t idx = 0;
 
@@ -462,7 +462,7 @@ bool DynamixelLL::syncWriteGoalPositions(const uint8_t* ids, const uint32_t* pos
     return sendRawPacket(packet, idx); // Funzione che invia il pacchetto sulla seriale
   }
 
-  bool DynamixelLL::sendRawPacket(const uint8_t* packet, uint16_t length) {
+bool DynamixelLL::sendRawPacket(const uint8_t* packet, uint16_t length) {
     // Svuota la seriale prima di inviare
     while (_serial.available()) {
       _serial.read();
