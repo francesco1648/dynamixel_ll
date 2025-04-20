@@ -546,18 +546,32 @@ uint8_t DynamixelLL::setGoalPosition(int32_t extendedPosition)
     // Use two's complement representation for 4-byte register.
     return writeRegister(116, static_cast<uint32_t>(extendedPosition), 4);
 }
+
+/**
+ * @brief Enables or disables torque on the Dynamixel servo.
+ *
+ * When Torque is enabled (value 1), the servo’s EEPROM is locked and the motor becomes active.
+ * When Torque is disabled (value 0), the servo’s EEPROM is unlocked and the motor deactivates.
+ *
+ * @param enable true to enable torque, false to disable.
+ * @return uint8_t Returns 0 on success or a nonzero error code if communication fails.
+ */
+uint8_t DynamixelLL::setTorqueEnable(bool enable)
 {
     uint8_t value = enable ? 1 : 0;
     return writeRegister(64, value, 1);
-
 }
 
-
-uint8_t DynamixelLL::setLED( bool enable)
+/**
+ * @brief Turns the LED on or off on the Dynamixel servo.
+ *
+ * @param enable true to turn the LED on, false to turn it off.
+ * @return uint8_t Returns 0 on success or a nonzero error code if communication fails.
+ */
+uint8_t DynamixelLL::setLED(bool enable)
 {
     uint8_t value = enable ? 1 : 0;
-     return writeRegister(65, value, 1);
-
+    return writeRegister(65, value, 1);
 }
 
 
