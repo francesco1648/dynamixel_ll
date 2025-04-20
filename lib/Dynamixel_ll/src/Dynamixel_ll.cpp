@@ -367,74 +367,166 @@ uint8_t DynamixelLL::ping( uint32_t &value){
 }
 
 
-bool DynamixelLL::syncWriteGoalPositions(const uint8_t* ids, const uint32_t* positions, uint8_t length)
+/**
+ * @brief Performs a synchronous write command to multiple devices.
+ * 
+ * This function constructs a parameter block by combining:
+ *   - 4 fixed bytes: starting register address (2 bytes, LSB first)
+ *     and data length (2 bytes, LSB first).
+ *   - For each device, a block consisting of 1 byte for the device ID
+ *     followed by the data bytes in little-endian order.
+ * 
+ * The complete parameter block is then passed to sendSyncWritePacket(),
+ * which constructs and sends the corresponding Sync Write packet.
+ *
+ * @param address     Starting register address for the write operation.
+ * @param dataLength  Number of data bytes per device.
+ * @param ids         Array of device IDs to target.
+ * @param values      Array of 32-bit values to write (only lower bytes used according to dataLength).
+ * @param count       Number of devices (length of the ids and values arrays).
+ * @return bool       Returns true if the Sync Write packet was successfully sent; false otherwise.
+ */
+bool DynamixelLL::syncWrite(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count)
 {
-    const uint16_t address = 116; // Address for Goal Position
-    const uint16_t dataLength = 4; // 4 bytes per Goal Position
+    // The fixed part of the parameter block: 4 bytes for starting address (2 bytes)
+    // and data length (2 bytes)
+    const uint16_t fixedParamLength = 4;
 
-    const uint16_t paramLength = (dataLength + 1) * length; // +1 for ID
-    uint8_t params[paramLength];
+    // Each device block consists of 1 byte (Device ID) + dataLength bytes.
+    const uint16_t deviceBlockLength = dataLength + 1;
 
-    for (uint8_t i = 0; i < length; ++i) {
-      params[i * (dataLength + 1)] = ids[i];
-      uint32_t pos = positions[i];
-      params[i * (dataLength + 1) + 1] = pos & 0xFF;
-      params[i * (dataLength + 1) + 2] = (pos >> 8) & 0xFF;
-      params[i * (dataLength + 1) + 3] = (pos >> 16) & 0xFF;
-      params[i * (dataLength + 1) + 4] = (pos >> 24) & 0xFF;
-    }
+    // Total parameter block: fixed part + one device block per motor.
+    const uint16_t paramBlockLength = fixedParamLength + (deviceBlockLength * count);
 
-    return sendSyncWritePacket(address, dataLength, params, paramLength);
-  }
-
-
-bool DynamixelLL::sendSyncWritePacket(uint16_t address, uint16_t dataLength, const uint8_t* params, uint16_t paramLength)
-{
-    uint8_t packet[10 + paramLength];
+    // Create a local buffer to hold the entire parameter block.
+    uint8_t params[paramBlockLength];
     uint16_t idx = 0;
 
+    // Fixed Parameters (4 bytes):
+    // Parameter 1-2: Starting address (LSB, MSB)
+    params[idx++] = address & 0xFF;
+    params[idx++] = (address >> 8) & 0xFF;
+    // Parameter 3-4: Data Length (LSB, MSB)
+    params[idx++] = dataLength & 0xFF;
+    params[idx++] = (dataLength >> 8) & 0xFF;
+
+    // Append each device's parameter block.
+    for (uint8_t i = 0; i < count; i++) {
+        // Add device ID.
+        params[idx++] = ids[i];
+        // Add the data bytes in little-endian order.
+        uint32_t val = values[i];
+        for (uint8_t j = 0; j < dataLength; j++) {
+            params[idx++] = (val >> (8 * j)) & 0xFF;
+        }
+    }
+
+    // With the complete parameter block built, send the full sync write packet.
+    return sendSyncWritePacket(params, paramBlockLength);
+}
+
+
+/**
+ * @brief Assembles and sends a Sync Write packet for multiple devices.
+ * 
+ * Given the complete parameter block for a Sync Write command, this function builds the full packet,
+ * which consists of:
+ *   - Header (4 bytes): 0xFF, 0xFF, 0xFD, 0x00
+ *   - Packet ID (1 byte): Broadcast ID (0xFE)
+ *   - Length (2 bytes): (Parameter Count + 3), in little-endian order.
+ *   - Instruction (1 byte): Sync Write (0x83)
+ *   - Parameter Block (n bytes): as constructed by syncWrite().
+ *   - CRC (2 bytes): Computed over all preceding bytes.
+ * 
+ * It then sends the assembled packet using sendRawPacket().
+ *
+ * @param parameters        The complete parameter block (fixed parameters and device-specific data).
+ * @param parametersLength  The length of the parameter block.
+ * @return bool             Returns true if the packet was successfully sent; false otherwise.
+ */
+bool DynamixelLL::sendSyncWritePacket(const uint8_t* parameters, uint16_t parametersLength)
+{
+    // Calculate Length field = (Parameter Block length + 3).
+    uint16_t lengthField = parametersLength + 3;
+    
+    // Total packet size:
+    //   Header (4) + Packet ID (1) + Length (2) + Instruction (1) +
+    //   Parameter Block (parametersLength) + CRC (2)
+    uint16_t packetSize = 10 + parametersLength;
+    uint8_t packet[packetSize];
+    uint16_t idx = 0;
+    
+    // Build Header (4 bytes)
     packet[idx++] = 0xFF;
     packet[idx++] = 0xFF;
     packet[idx++] = 0xFD;
     packet[idx++] = 0x00;
-    packet[idx++] = 0xFE; // Broadcast ID
 
-    uint16_t length = 3 + 2 + 2 + paramLength; // INST + addr + len + data
-    packet[idx++] = length & 0xFF;
-    packet[idx++] = (length >> 8) & 0xFF;
+    // Packet ID (Broadcast ID: 0xFE)
+    packet[idx++] = 0xFE;
 
-    packet[idx++] = 0x83; // Sync Write instruction
+    // Length (2 bytes): (Parameter Count + 3) in little-endian.
+    packet[idx++] = lengthField & 0xFF;          // LSB
+    packet[idx++] = (lengthField >> 8) & 0xFF;     // MSB
 
-    packet[idx++] = address & 0xFF;
-    packet[idx++] = (address >> 8) & 0xFF;
-    packet[idx++] = dataLength & 0xFF;
-    packet[idx++] = (dataLength >> 8) & 0xFF;
-
-    for (uint16_t i = 0; i < paramLength; ++i)
-      packet[idx++] = params[i];
-
-    uint16_t crc = calculateCRC(packet, idx);
-    packet[idx++] = crc & 0xFF;
-    packet[idx++] = (crc >> 8) & 0xFF;
-
-    return sendRawPacket(packet, idx); // Funzione che invia il pacchetto sulla seriale
+    // Instruction (1 byte): Sync Write (0x83)
+    packet[idx++] = 0x83;
+    
+    // Copy the parameter block.
+    memcpy(&packet[idx], parameters, parametersLength);
+    idx += parametersLength;
+    
+    // Compute and append CRC (2 bytes).
+    uint16_t crc = calculateCRC(packet, packetSize - 2);
+    packet[idx++] = crc & 0xFF;          // CRC LSB
+    packet[idx++] = (crc >> 8) & 0xFF;     // CRC MSB
+    
+    // Optionally, print packet for debugging:
+    if (_debug) {
+        Serial.print("Sync Write Packet: ");
+        for (uint16_t i = 0; i < packetSize; ++i) {
+            Serial.print("0x");
+            if (packet[i] < 0x10) Serial.print("0");
+            Serial.print(packet[i], HEX);
+            Serial.print(" ");
+        }
+        Serial.println();
+    }
+    
+    // Send the assembled packet.
+    return sendRawPacket(packet, packetSize);
 }
 
+
+/**
+ * @brief Sends a raw packet to the serial interface.
+ *
+ * This function flushes any residual data in the input buffer, writes the entire packet
+ * to the serial port in one call, and then flushes the transmission buffer.
+ * It returns true if the number of bytes written matches the expected length.
+ *
+ * @param packet Pointer to the packet data.
+ * @param length The number of bytes in the packet.
+ * @return true if the packet is sent successfully; false otherwise.
+ */
 bool DynamixelLL::sendRawPacket(const uint8_t* packet, uint16_t length)
 {
-    // Svuota la seriale prima di inviare
+    // Clear any pending data from the serial input buffer.
     while (_serial.available()) {
-      _serial.read();
+        _serial.read();
     }
 
-    // Invia il pacchetto byte per byte
-    for (uint16_t i = 0; i < length; ++i) {
-      _serial.write(packet[i]);
-    }
+    // Write the entire packet in one go.
+    size_t bytesWritten = _serial.write(packet, length);
 
-    _serial.flush(); // Assicurati che la trasmissione sia completata
+    // Ensure that the transmission is complete.
+    _serial.flush();
 
-    return true; // Se vuoi, potresti controllare anche errori
+    // Check that the number of bytes written equals the packet length.
+    return (bytesWritten == length);
+}
+
+
 }
 
 

@@ -35,9 +35,7 @@ public:
     uint8_t getPresentPosition(uint32_t &presentPosition); // RAM address 132, 4 bytes
     uint8_t setID(uint8_t newID); // EEPROM address 7, 1 byte
     uint8_t ping(uint32_t &value);
-    uint8_t setVelocity(uint32_t velocity); // RAM address 112, 4 bytes
-    void setGoalPositionsSync(uint8_t* ids, uint32_t* positions, int count);
-    bool syncWriteGoalPositions(const uint8_t* ids, const uint32_t* positions, uint8_t length);
+    bool syncWrite(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count);
 
 private:
     HardwareSerial &_serial;
@@ -51,7 +49,7 @@ private:
     uint8_t readRegister(uint16_t address, uint32_t &value, uint8_t size);
 
     void sendPacket(const uint8_t *packet, size_t length);
-    bool sendSyncWritePacket(uint16_t address, uint16_t dataLength, const uint8_t* params, uint16_t paramLength);
+    bool sendSyncWritePacket(const uint8_t* parameters, uint16_t parametersLength);
     bool sendRawPacket(const uint8_t* packet, uint16_t length);
 
 };
