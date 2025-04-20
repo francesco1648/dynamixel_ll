@@ -29,6 +29,9 @@ public:
     uint8_t setLED(bool enable); // RAM address 65, 1 byte, default value 0
     uint8_t setStatusReturnLevel(uint8_t level); // RAM address 68, 1 byte, default value 2
     uint8_t setBaudRate(uint8_t baudRate); // EEPROM address 8, 1 byte, default value 34 (57600 bps)
+    uint8_t setDriveMode(bool torqueOnByGoalUpdate, bool timeBasedProfile, bool reverseMode); // EEPROM address 10, 1 byte
+    uint8_t setProfileAcceleration(uint32_t profileAcceleration); // RAM address 108, 4 bytes, default value 0
+    uint8_t setProfileVelocity(uint32_t profileVelocity); // RAM address 112, 4 bytes, default value 0
     uint8_t setReturnDelayTime(uint32_t delayTime); // EEPROM address 9, 1 byte, default value 250 (500 μsec)
     uint8_t setID(uint8_t newID); // EEPROM address 7, 1 byte
 

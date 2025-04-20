@@ -772,4 +772,160 @@ uint8_t DynamixelLL::setReturnDelayTime(uint32_t delayTime)
 }
 
 
+/**
+ * @brief Configures the Drive Mode of the Dynamixel actuator.
+ * 
+ * Drive Mode (register 10, 1 byte) controls key behaviors of the actuator:
+ *   - Bit 3 (0x08): Torque On by Goal Update  
+ *       • false: Movements are executed only if Torque Enable (register 64) is already set.
+ *       • true : Movements are executed regardless of the current torque state (torque auto‑enabled if needed).
+ *
+ *   - Bit 2 (0x04): Profile Configuration  
+ *       • false: Uses a Velocity-based Profile (default, unit: 0.229 [rev/min], range: 0–32767, where 0 means unlimited).
+ *       • true : Uses a Time-based Profile (requires firmware V42+; unit: 1 [msec], range: 0–32737, where 0 means unlimited).
+ *
+ *   - Bit 0 (0x01): Normal/Reverse Mode  
+ *       • false: Normal mode (CCW: positive, CW: negative)
+ *       • true : Reverse mode (inverts the rotation directions).
+ *
+ * The function constructs the 1-byte mode value based on the Boolean parameters and writes it 
+ * to Control Table register 10. It returns the error code from writeRegister().
+ *
+ * @param torqueOnByGoalUpdate Set true to enable auto-torque on goal update.
+ * @param timeBasedProfile     Set true to use time-based profiling (if supported by firmware).
+ * @param reverseMode          Set true to invert the directional mapping.
+ * @return uint8_t Returns 0 on success, nonzero if writing to register 10 fails.
+ */
+uint8_t DynamixelLL::setDriveMode(bool torqueOnByGoalUpdate, bool timeBasedProfile, bool reverseMode)
+{
+    uint8_t mode = 0;
+    if (torqueOnByGoalUpdate) {
+        mode |= 0x08; // Set Bit 3.
+    }
+    if (timeBasedProfile) {
+        mode |= 0x04; // Set Bit 2.
+    }
+    if (reverseMode) {
+        mode |= 0x01; // Set Bit 0.
+    }
+    return writeRegister(10, mode, 1);
+}
+
+/**
+ * @brief Sets the Profile Velocity.
+ * 
+ * This function configures Profile Velocity (register 112, 4 bytes) used to generate smooth motion trajectories.
+ *
+ * When using a Velocity-based Profile:
+ *   - Unit: 0.229 [rev/min]
+ *   - Valid Range: 0 to 32767 (0 represents an infinite velocity limit)
+ *
+ * When using a Time-based Profile:
+ *   - Unit: 1 [msec] (defines the execution time of the movement)
+ *   - Valid Range: 0 to 32737 (0 represents an infinite velocity limit)
+ *
+ * The function first reads the Drive Mode (register 10) to determine whether a time-based profile is enabled.
+ * It then clamps the input value to the maximum allowed for the current configuration.
+ * If clamping occurs, a debug message is output. Finally, it writes the (possibly adjusted)
+ * value to register 112.
+ *
+ * @param profileVelocity The desired profile velocity value.
+ * @return uint8_t Returns 0 on success or a nonzero error code if writing fails.
+ */
+uint8_t DynamixelLL::setProfileVelocity(uint32_t profileVelocity)
+{
+    uint32_t driveModeTemp = 0;
+    uint8_t error = readRegister(10, driveModeTemp, 1);
+    uint8_t driveMode = driveModeTemp & 0xFF;
+    bool timeBased = (error == 0) && ((driveMode & 0x04) != 0); 
+  
+    const uint32_t maxProfileVelocity = timeBased ? 32737UL : 32767UL;
+    if (profileVelocity > maxProfileVelocity) {
+        if (_debug) {
+            Serial.print("Profile velocity value clamped to ");
+            Serial.println(maxProfileVelocity);
+        }
+        profileVelocity = maxProfileVelocity;
+    }
+    return writeRegister(112, profileVelocity, 4);
+}
+
+/**
+ * @brief Sets the Profile Acceleration.
+ * 
+ * This function configures Profile Acceleration (register 108, 4 bytes) for smooth transitions.
+ *
+ * When using a Velocity-based Profile:
+ *   - Unit: 214.577 [rev/min^2]
+ *   - Valid Range: 0 to 32767 (0 means infinite acceleration)
+ *
+ * When using a Time-based Profile:
+ *   - Unit: 1 [msec]
+ *   - Valid Range: 0 to 32737 (0 means infinite acceleration time)
+ *
+ * The function reads the Drive Mode (register 10) to select the correct maximum value.
+ * It clamps the input acceleration value if it exceeds the allowed maximum.
+ * Additionally, for time-based profiles, it checks that Profile Acceleration does not exceed
+ * half of the current Profile Velocity (read from register 112). In case of clamping,
+ * a debug message is output.
+ *
+ * @param profileAcceleration The desired acceleration value.
+ * @return uint8_t Returns 0 on success, or a nonzero error code if writing fails.
+ */
+uint8_t DynamixelLL::setProfileAcceleration(uint32_t profileAcceleration)
+{
+    uint32_t driveModeTemp = 0;
+    uint8_t error = readRegister(10, driveModeTemp, 1);
+    uint8_t driveMode = driveModeTemp & 0xFF;
+    bool timeBased = (error == 0) && ((driveMode & 0x04) != 0);
+    
+    const uint32_t maxProfileAcceleration = timeBased ? 32737UL : 32767UL;
+    if (profileAcceleration > maxProfileAcceleration) {
+        if (_debug) {
+            Serial.print("Profile acceleration value clamped to ");
+            Serial.println(maxProfileAcceleration);
+        }
+        profileAcceleration = maxProfileAcceleration;
+    }
+    
+    // For time-based profile, ensure acceleration does not exceed half of the current profile velocity.
+    uint32_t currentProfileVelocity = 0;
+    error = readRegister(112, currentProfileVelocity, 4);
+    if (timeBased && error == 0 && currentProfileVelocity > 0 && profileAcceleration > (currentProfileVelocity / 2)) {
+        uint32_t clampedValue = currentProfileVelocity / 2;
+        if (_debug) {
+            Serial.print("Profile acceleration value clamped to half of current profile velocity: ");
+            Serial.println(clampedValue);
+        }
+        profileAcceleration = clampedValue;
+    } else if (error != 0 && _debug) {
+        Serial.print("Error reading Profile Velocity: ");
+        Serial.println(error);
+    }
+    
+    return writeRegister(108, profileAcceleration, 4);
+}
+
+
+/**
+ * @brief Reads the current present position of the Dynamixel actuator.
+ * 
+ * The present position is stored in a 4-byte register (address 132). Interpretation of the 
+ * value depends on the operating mode and torque status:
+ *   - With torque OFF, the value is continuous (in a 32-bit signed representation).
+ *   - In Position Control Mode (Mode 3) with torque ON, the position is reset into a single 
+ *     rotation range.
+ * 
+ * This function reads the 4-byte register and returns the result in the variable provided 
+ * by reference.
+ * 
+ * @param presentPosition Reference variable to store the 4-byte present position value.
+ * @return uint8_t Returns 0 on success, or a nonzero error code if the read operation fails.
+ */
+uint8_t DynamixelLL::getPresentPosition(uint32_t &presentPosition)
+{
+    return readRegister(132, presentPosition, 4);
+}
+
+
 }
