@@ -70,6 +70,52 @@ uint16_t DynamixelLL::calculateCRC(const uint8_t *data_blk_ptr, size_t data_blk_
     return crc_accum;
 }
 
+
+void DynamixelLL::printResponse()
+{
+    // Pulisce eventuali byte rimasti nel buffer prima di leggere la risposta
+    while (_serial.available())
+    {
+        _serial.read(); // Consuma i byte nel buffer
+    }
+
+    unsigned long startMillis = millis();
+    unsigned long timeout = 1000; // Timeout di 1 secondo per la lettura
+
+        Serial.println("Inizio lettura risposta:");
+
+    // Legge i byte dalla seriale
+    while (millis() - startMillis < timeout)
+    {
+        if (_serial.available())
+        {
+            uint8_t byte = _serial.read();
+
+                Serial.print("0x");
+                if (byte < 0x10)
+                    Serial.print("0");
+                Serial.print(byte, HEX);
+                Serial.print(" ");
+
+        }
+    }
+
+        Serial.println("\nFine lettura risposta");
+
+}
+
+
+void DynamixelLL::setDebug(bool enable)
+{
+    _debug = enable;
+}
+
+
+// ===============================
+// ==   Instruction Functions   ==
+// ===============================
+
+
 uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t value, uint8_t size, uint8_t sizeResponse)
 {
     // Calcolo lunghezza del pacchetto: header (4) + ID (1) + lunghezza (2) + istruzione (1) + indirizzo (2) + valore (1/2/4)
@@ -127,6 +173,7 @@ uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t value, uint8_t siz
 
 }
 
+
 uint8_t DynamixelLL::readRegister(uint16_t address, uint32_t &value, uint8_t size)
 {
     uint8_t packet[14];
@@ -173,38 +220,7 @@ uint8_t DynamixelLL::readRegister(uint16_t address, uint32_t &value, uint8_t siz
     return response.error;
 }
 
-void DynamixelLL::printResponse()
-{
-    // Pulisce eventuali byte rimasti nel buffer prima di leggere la risposta
-    while (_serial.available())
-    {
-        _serial.read(); // Consuma i byte nel buffer
-    }
 
-    unsigned long startMillis = millis();
-    unsigned long timeout = 1000; // Timeout di 1 secondo per la lettura
-
-        Serial.println("Inizio lettura risposta:");
-
-    // Legge i byte dalla seriale
-    while (millis() - startMillis < timeout)
-    {
-        if (_serial.available())
-        {
-            uint8_t byte = _serial.read();
-
-                Serial.print("0x");
-                if (byte < 0x10)
-                    Serial.print("0");
-                Serial.print(byte, HEX);
-                Serial.print(" ");
-
-        }
-    }
-
-        Serial.println("\nFine lettura risposta");
-
-}
 void DynamixelLL::sendPacket(const uint8_t *packet, size_t length)
 {
     if (_debug)
@@ -222,6 +238,8 @@ void DynamixelLL::sendPacket(const uint8_t *packet, size_t length)
     }
     _serial.write(packet, length);
 }
+
+
 StatusPacket DynamixelLL::recivePacket(uint8_t expectedParams)
 {
     StatusPacket result = {false, 0, {0}, 0};
@@ -308,61 +326,6 @@ StatusPacket DynamixelLL::recivePacket(uint8_t expectedParams)
     return result;
 }
 
-void DynamixelLL::setDebug(bool enable)
-{
-    _debug = enable;
-}
-
-uint8_t DynamixelLL::setGoalPosition(uint32_t goalPosition)
-{
-    return  writeRegister(116, goalPosition, 4);
-
-}
-
-
-
-uint8_t DynamixelLL::setTorqueEnable( bool enable)
-{
-    uint8_t value = enable ? 1 : 0;
-    return writeRegister(64, value, 1);
-
-}
-
-
-uint8_t DynamixelLL::setLED( bool enable)
-{
-    uint8_t value = enable ? 1 : 0;
-     return writeRegister(65, value, 1);
-
-}
-
-
-uint8_t DynamixelLL::setStatusReturnLevel(uint8_t level)
-{
-     return writeRegister(68, level, 1);
-
-}
-
-uint8_t DynamixelLL::setBaudRate(uint32_t baudRate)
-{
-     return writeRegister(8, baudRate, 1);
-
-}
-uint8_t DynamixelLL::setReturnDelayTime(uint32_t delayTime)
-{
-     return writeRegister(9, delayTime, 1);
-
-}
-uint8_t DynamixelLL::getPresentPosition(uint32_t &presentPosition)
-{
-    return  readRegister(132, presentPosition, 4);
-
-}
-
-uint8_t DynamixelLL::setID(uint8_t newID)
-{
-    return writeRegister(7, newID, 1);
-}
 
 uint8_t DynamixelLL::ping( uint32_t &value){
 
@@ -384,8 +347,6 @@ uint8_t DynamixelLL::ping( uint32_t &value){
     // Instruction: ping (0x01)
     packet[7] = 0x01;
 
-
-
     // Calcolo CRC
     size_t lenNoCRC = 8;                   // Lunghezza pacchetto senza il CRC
     uint16_t crc = calculateCRC(packet, lenNoCRC); // Calcolo CRC
@@ -405,13 +366,9 @@ uint8_t DynamixelLL::ping( uint32_t &value){
     return response.error;
 }
 
-uint8_t DynamixelLL::setVelocity(uint32_t velocity)
+
+bool DynamixelLL::syncWriteGoalPositions(const uint8_t* ids, const uint32_t* positions, uint8_t length)
 {
-    return writeRegister(112, velocity, 4); // Address 32, Value 1, Size 2 byte
-}
-
-
-bool DynamixelLL::syncWriteGoalPositions(const uint8_t* ids, const uint32_t* positions, uint8_t length) {
     const uint16_t address = 116; // Address for Goal Position
     const uint16_t dataLength = 4; // 4 bytes per Goal Position
 
@@ -431,7 +388,8 @@ bool DynamixelLL::syncWriteGoalPositions(const uint8_t* ids, const uint32_t* pos
   }
 
 
-bool DynamixelLL::sendSyncWritePacket(uint16_t address, uint16_t dataLength, const uint8_t* params, uint16_t paramLength) {
+bool DynamixelLL::sendSyncWritePacket(uint16_t address, uint16_t dataLength, const uint8_t* params, uint16_t paramLength)
+{
     uint8_t packet[10 + paramLength];
     uint16_t idx = 0;
 
@@ -460,9 +418,10 @@ bool DynamixelLL::sendSyncWritePacket(uint16_t address, uint16_t dataLength, con
     packet[idx++] = (crc >> 8) & 0xFF;
 
     return sendRawPacket(packet, idx); // Funzione che invia il pacchetto sulla seriale
-  }
+}
 
-bool DynamixelLL::sendRawPacket(const uint8_t* packet, uint16_t length) {
+bool DynamixelLL::sendRawPacket(const uint8_t* packet, uint16_t length)
+{
     // Svuota la seriale prima di inviare
     while (_serial.available()) {
       _serial.read();
@@ -476,4 +435,72 @@ bool DynamixelLL::sendRawPacket(const uint8_t* packet, uint16_t length) {
     _serial.flush(); // Assicurati che la trasmissione sia completata
 
     return true; // Se vuoi, potresti controllare anche errori
-  }
+}
+
+
+// ===============================
+// ==  Control Table Functions  ==
+// ===============================
+
+
+uint8_t DynamixelLL::setGoalPosition(uint32_t goalPosition)
+{
+    return  writeRegister(116, goalPosition, 4);
+
+}
+
+
+uint8_t DynamixelLL::setTorqueEnable( bool enable)
+{
+    uint8_t value = enable ? 1 : 0;
+    return writeRegister(64, value, 1);
+
+}
+
+
+uint8_t DynamixelLL::setLED( bool enable)
+{
+    uint8_t value = enable ? 1 : 0;
+     return writeRegister(65, value, 1);
+
+}
+
+
+uint8_t DynamixelLL::setStatusReturnLevel(uint8_t level)
+{
+     return writeRegister(68, level, 1);
+
+}
+
+
+uint8_t DynamixelLL::setBaudRate(uint32_t baudRate)
+{
+     return writeRegister(8, baudRate, 1);
+
+}
+
+
+uint8_t DynamixelLL::setReturnDelayTime(uint32_t delayTime)
+{
+     return writeRegister(9, delayTime, 1);
+
+}
+
+
+uint8_t DynamixelLL::getPresentPosition(uint32_t &presentPosition)
+{
+    return  readRegister(132, presentPosition, 4);
+
+}
+
+
+uint8_t DynamixelLL::setID(uint8_t newID)
+{
+    return writeRegister(7, newID, 1);
+}
+
+
+uint8_t DynamixelLL::setVelocity(uint32_t velocity)
+{
+    return writeRegister(112, velocity, 4);
+}
