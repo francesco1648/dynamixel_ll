@@ -443,14 +443,109 @@ bool DynamixelLL::sendRawPacket(const uint8_t* packet, uint16_t length)
 // ===============================
 
 
-uint8_t DynamixelLL::setGoalPosition(uint32_t goalPosition)
+/**
+ * @brief Sets the Operating Mode of the Dynamixel servo.
+ *
+ * The allowed operating mode codes are:
+ *   1 = Velocity Control Mode,
+ *   3 = Position Control Mode,
+ *   4 = Extended Position Control Mode,
+ *   16 = PWM Control Mode.
+ *
+ * If an unsupported mode is provided, the function returns an error code (1)
+ * without attempting to write to the register.
+ *
+ * @param mode The desired operating mode (1, 3, 4, or 16).
+ * @return uint8_t Returns 0 on success, or a nonzero error code if the mode is unsupported.
+ */
+uint8_t DynamixelLL::setOperatingMode(uint8_t mode)
 {
-    return  writeRegister(116, goalPosition, 4);
-
+    // Allowed: 1 = Velocity, 3 = Position, 4 = Extended, 16 = PWM.
+    if (!(mode == 1 || mode == 3 || mode == 4 || mode == 16))
+    {
+        return 1; // error: unsupported mode
+    }
+    return writeRegister(11, mode, 1);
 }
 
+/**
+ * @brief Sets the Goal Position (Position Control Mode) using a raw pulse value.
+ *
+ * The valid range for a pulse value is from 0 to 4095.
+ * If the provided value exceeds 4095, it is clamped, and the developer is notified
+ * via debug messages (if enabled). Note: The servo internally also limits the value; the main purpose
+ * of the clamping here is to aid debugging.
+ *
+ * @param goalPosition The target position in pulses (0 to 4095).
+ * @return uint8_t Returns 0 on success or a nonzero error code if communication fails.
+ */
+uint8_t DynamixelLL::setGoalPosition(uint16_t goalPosition)
+{
+    // Clamp within the valid range: 0 - 4095 pulses.
+    if (goalPosition > 4095) {
+        goalPosition = 4095;
+        if (_debug)
+        {
+            Serial.println("Warning: Goal position clamped to 4095.");
+        }
+    }
+    return writeRegister(116, goalPosition, 4); // Write 4 bytes to address 116.
+}
 
-uint8_t DynamixelLL::setTorqueEnable( bool enable)
+/**
+ * @brief Sets the Goal Position (Position Control Mode) using an angle in degrees.
+ *
+ * The function converts the given angle (in degrees) to the corresponding number of pulses
+ * using a conversion factor of 0.088 deg/pulse. If the resulting value exceeds the maximum allowed (4095),
+ * it is clamped, with a debug message to notify the user. The servo performs internal clamping as well,
+ * but this function is intended to provide early debugging feedback for out-of-range values.
+ *
+ * @param angleDegrees The desired goal position in degrees.
+ * @return uint8_t Returns 0 on success or a nonzero error code if communication fails.
+ */
+uint8_t DynamixelLL::setGoalPosition(float angleDegrees)
+{
+    // Convert angle in degrees to pulses using conversion factor 0.088 [deg/pulse].
+    uint32_t goalPosition = static_cast<uint32_t>(angleDegrees / 0.088);
+    if (goalPosition > 4095) {
+        goalPosition = 4095;
+        if (_debug)
+        {
+            Serial.println("Warning: Angle conversion resulted in value exceeding 4095, clamped.");
+        }
+    }
+    return writeRegister(116, goalPosition, 4);
+}
+
+/**
+ * @brief Sets the Goal Position in Extended Position Control Mode.
+ *
+ * Extended Position Control Mode supports negative position values.
+ * The valid range for extended positions is from -1,048,575 to +1,048,575 pulses.
+ * If the provided value falls outside this range, it is clamped, and a debug message is output.
+ *
+ * @param extendedPosition The desired position as a 32-bit signed integer.
+ * @return uint8_t Returns 0 on success or a nonzero error code if communication fails.
+ */
+uint8_t DynamixelLL::setGoalPosition(int32_t extendedPosition)
+{
+    // Clamp within valid range: -1,048,575 to +1,048,575 pulses.
+    if (extendedPosition > 1048575) {
+        extendedPosition = 1048575;
+        if (_debug)
+        {
+            Serial.println("Warning: Extended position clamped to 1048575.");
+        }
+    } else if (extendedPosition < -1048575) {
+        extendedPosition = -1048575;
+        if (_debug)
+        {
+            Serial.println("Warning: Extended position clamped to -1048575.");
+        }
+    }
+    // Use two's complement representation for 4-byte register.
+    return writeRegister(116, static_cast<uint32_t>(extendedPosition), 4);
+}
 {
     uint8_t value = enable ? 1 : 0;
     return writeRegister(64, value, 1);

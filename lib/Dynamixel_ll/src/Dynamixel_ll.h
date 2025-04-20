@@ -21,7 +21,10 @@ public:
     void printResponse();
 
     void setDebug(bool enable);
-    uint8_t setGoalPosition(uint32_t goalPosition); // RAM address 116, 4 bytes
+    uint8_t setOperatingMode(uint8_t mode); // EEPROM address 11, 1 byte, default value 3
+    uint8_t setGoalPosition(uint16_t goalPosition); // RAM address 116, 4 bytes, mode 3
+    uint8_t setGoalPosition(float angleDegrees); // RAM address 116, 4 bytes, mode 3
+    uint8_t setGoalPosition(int32_t extendedPosition); // RAM address 116, 4 bytes, mode 4
     uint8_t setTorqueEnable(bool enable); // RAM address 64, 1 byte, default value 0
     uint8_t setLED(bool enable); // RAM address 65, 1 byte, default value 0
     uint8_t setStatusReturnLevel(uint8_t level); // RAM address 68, 1 byte, default value 2
