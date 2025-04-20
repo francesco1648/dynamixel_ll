@@ -574,18 +574,41 @@ uint8_t DynamixelLL::setLED(bool enable)
     return writeRegister(65, value, 1);
 }
 
-
+/**
+ * @brief Sets the Status Return Level of the Dynamixel servo.
+ *
+ * The Status Return Level defines which instructions will generate a status packet:
+ *   - 0: Return status packet for PING instructions only.
+ *   - 1: Return status packet for PING and READ instructions.
+ *   - 2: Return status packet for all instructions.
+ *
+ * Note: When broadcasting (ID 0xFE), no status packet is returned.
+ *
+ * @param level The desired status return level (0, 1, or 2).
+ * @return uint8_t Returns 0 on success or a nonzero error code if communication fails.
+ */
 uint8_t DynamixelLL::setStatusReturnLevel(uint8_t level)
 {
-     return writeRegister(68, level, 1);
-
+    return writeRegister(68, level, 1);
 }
 
 
-uint8_t DynamixelLL::setBaudRate(uint32_t baudRate)
+/**
+ * @brief Sets the unique ID of the Dynamixel actuator.
+ * 
+ * The actuator’s ID is used to uniquely address it on the Dynamixel bus. Valid values 
+ * range from 0 to 253. Note that 254 (0xFE) is reserved as the Broadcast ID, which 
+ * cannot be assigned to an individual actuator. In a network of Dynamixel devices, each 
+ * device must have a unique ID to avoid collision.
+ * 
+ * This function writes the new ID to Control Table address 7.
+ * 
+ * @param newID The new ID to assign (0 <= newID <= 253).
+ * @return uint8_t Returns 0 on success, or a nonzero error code if the write operation fails.
+ */
+uint8_t DynamixelLL::setID(uint8_t newID)
 {
-     return writeRegister(8, baudRate, 1);
-
+    return writeRegister(7, newID, 1);
 }
 
 
