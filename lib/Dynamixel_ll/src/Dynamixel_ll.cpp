@@ -928,4 +928,55 @@ uint8_t DynamixelLL::getPresentPosition(uint32_t &presentPosition)
 }
 
 
+/**
+ * @brief Retrieves the Moving Status of the actuator.
+ * 
+ * This function reads the Moving Status (register 123, 1 byte) and decodes the following bits:
+ *   - Bits 5 & 4: Velocity Profile Type, where:
+ *       11 -> Trapezoidal Profile,
+ *       10 -> Triangular Profile,
+ *       01 -> Rectangular Profile,
+ *       00 -> Profile not used (step mode).
+ *   - Bit 3: Following Error (0: no error, 1: not following the desired trajectory).
+ *   - Bit 1: Profile Ongoing (0: profile complete, 1: profile in progress).
+ *   - Bit 0: In-Position (0: not arrived, 1: arrived at goal).
+ *
+ * The function returns a MovingStatus structure containing the raw value and the decoded flags.
+ * If the read operation fails, the returned structure has raw value zero.
+ *
+ * @return MovingStatus A structure containing:
+ *         - raw: The raw status byte.
+ *         - profileType: The decoded velocity profile type.
+ *         - followingError: True if a following error exists.
+ *         - profileOngoing: True if a motion profile is still in progress.
+ *         - inPosition: True if the actuator has reached the target position.
+ */
+MovingStatus DynamixelLL::getMovingStatus()
+{
+    MovingStatus status;
+    status.raw = 0;  // Default value.
+    
+    uint32_t temp = 0;
+    uint8_t error = readRegister(123, temp, 1);
+    if (error != 0) {
+        if (_debug) {
+            Serial.print("Error reading Moving Status, error code: ");
+            Serial.println(error, HEX);
+        }
+        return status;
+    }
+    
+    // Extract the raw status byte (LSB) from the 4-byte value.
+    status.raw = temp & 0xFF;
+    
+    // Decode velocity profile type (bits 5 and 4).
+    uint8_t profileBits = (status.raw >> 4) & 0x03;
+    status.profileType = static_cast<VelocityProfileType>(profileBits);
+    
+    // Decode Following Error (bit 3), Profile Ongoing (bit 1), and In-Position (bit 0).
+    status.followingError = ((status.raw >> 3) & 0x01) != 0;
+    status.profileOngoing = ((status.raw >> 1) & 0x01) != 0;
+    status.inPosition = (status.raw & 0x01) != 0;
+    
+    return status;
 }

@@ -10,6 +10,26 @@ struct StatusPacket
     uint8_t dataLength;
 };
 
+// Define an enumeration for the Velocity Profile type.
+enum VelocityProfileType
+{
+    PROFILE_NOT_USED = 0,  // 00
+    RECTANGULAR      = 1,  // 01
+    TRIANGULAR       = 2,  // 10
+    TRAPEZOIDAL      = 3   // 11
+};
+
+// Define a structure to hold the decoded Moving Status.
+struct MovingStatus
+{
+    uint8_t raw;                      // The raw value from register 123.
+    VelocityProfileType profileType;  // Bit 5 and Bit 4: velocity profile type.
+    bool followingError;              // Bit 3: 0 = following, 1 = not following.
+    bool profileOngoing;              // Bit 1: 0 = completed, 1 = profile in progress.
+    bool inPosition;                  // Bit 0: 0 = not arrived, 1 = arrived.
+};
+
+// The Main Class for Dynamixel Communication
 class DynamixelLL
 {
 public:
@@ -36,7 +56,8 @@ public:
     uint8_t setID(uint8_t newID); // EEPROM address 7, 1 byte
 
     uint8_t getPresentPosition(uint32_t &presentPosition); // RAM address 132, 4 bytes
-    uint8_t setID(uint8_t newID); // EEPROM address 7, 1 byte
+    MovingStatus getMovingStatus(); // RAM address 123, 1 byte
+    
     uint8_t ping(uint32_t &value);
     bool syncWrite(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count);
 

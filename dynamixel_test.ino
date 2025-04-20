@@ -84,6 +84,22 @@ void loop() {
   Serial.print("Final Position of the second motor: ");
   Serial.println(getpositions[1]);
 
+  // Read and display the moving status of the first motor.
+  MovingStatus status = motor1.getMovingStatus();
+  Serial.print("Profile Type: ");
+  switch(status.profileType) {
+      case TRAPEZOIDAL: Serial.println("Trapezoidal"); break;
+      case TRIANGULAR:  Serial.println("Triangular"); break;
+      case RECTANGULAR: Serial.println("Rectangular"); break;
+      case PROFILE_NOT_USED: Serial.println("Not used (Step)"); break;
+  }
+  Serial.print("Following Error: ");
+  Serial.println(status.followingError ? "Following" : "Not following");
+  Serial.print("Profile Ongoing: ");
+  Serial.println(status.profileOngoing ? "In progress" : "Completed");
+  Serial.print("In-Position: ");
+  Serial.println(status.inPosition ? "Arrived" : "Not arrived");
+
 
   delay(1000); // Wait for a bit before the next loop.
 
