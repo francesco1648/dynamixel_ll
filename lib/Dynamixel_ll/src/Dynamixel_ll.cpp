@@ -656,27 +656,28 @@ uint8_t DynamixelLL::setBaudRate(uint8_t baudRate)
     return writeRegister(8, baudRate, 1);
 }
 
+/**
+ * @brief Sets the Return Delay Time for the Dynamixel servo.
+ *
+ * The Return Delay Time defines the delay between receiving an instruction and sending
+ * a status packet, in units of 2 μsec. The valid range is 0 to 254.
+ * If a value beyond 254 is provided, it is clamped to 254 (and a debug message is issued).
+ *
+ * @param delayTime The desired delay time (in units of 2 μsec).
+ * @return uint8_t Returns 0 on success or a nonzero error code if communication fails.
+ */
 uint8_t DynamixelLL::setReturnDelayTime(uint32_t delayTime)
 {
-     return writeRegister(9, delayTime, 1);
-
+    if (delayTime > 254)
+    {
+        delayTime = 254;
+        if (_debug)
+        {
+            Serial.println("Warning: setReturnDelayTime clamped to 254.");
+        }
+    }
+    return writeRegister(9, delayTime, 1);
 }
 
 
-uint8_t DynamixelLL::getPresentPosition(uint32_t &presentPosition)
-{
-    return  readRegister(132, presentPosition, 4);
-
-}
-
-
-uint8_t DynamixelLL::setID(uint8_t newID)
-{
-    return writeRegister(7, newID, 1);
-}
-
-
-uint8_t DynamixelLL::setVelocity(uint32_t velocity)
-{
-    return writeRegister(112, velocity, 4);
 }
