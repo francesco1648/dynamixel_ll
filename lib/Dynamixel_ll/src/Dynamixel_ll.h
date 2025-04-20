@@ -28,6 +28,7 @@ public:
     uint8_t setTorqueEnable(bool enable); // RAM address 64, 1 byte, default value 0
     uint8_t setLED(bool enable); // RAM address 65, 1 byte, default value 0
     uint8_t setStatusReturnLevel(uint8_t level); // RAM address 68, 1 byte, default value 2
+    uint8_t setBaudRate(uint8_t baudRate); // EEPROM address 8, 1 byte, default value 34 (57600 bps)
     uint8_t setID(uint8_t newID); // EEPROM address 7, 1 byte
 
     uint8_t getPresentPosition(uint32_t &presentPosition); // RAM address 132, 4 bytes

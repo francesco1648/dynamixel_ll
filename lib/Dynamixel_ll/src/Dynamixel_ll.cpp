@@ -612,6 +612,50 @@ uint8_t DynamixelLL::setID(uint8_t newID)
 }
 
 
+/**
+ * @brief Sets the baud rate for communication with the Dynamixel servo.
+ *
+ * The function verifies that the provided baud rate code is valid. The allowed codes are:
+ *   1  -> 1,000,000 bps,
+ *   3  -> 500,000 bps,
+ *   4  -> 400,000 bps,
+ *   7  -> 250,000 bps,
+ *   9  -> 200,000 bps,
+ *   16 -> 115,200 bps,
+ *   34 -> 57,600 bps,
+ *   103 -> 19,200 bps,
+ *   207 -> 9,600 bps.
+ *
+ * If an invalid baud rate code is provided, the function outputs a debug error message
+ * and returns an error code.
+ *
+ * @param baudRate The baud rate code selected.
+ * @return uint8_t Returns 0 on success, or a nonzero error code if the baud rate is invalid or communication fails.
+ */
+uint8_t DynamixelLL::setBaudRate(uint8_t baudRate)
+{
+    const uint8_t allowed[] = { 1, 3, 4, 7, 9, 16, 34, 103, 207 };
+    bool valid = false;
+    for (size_t i = 0; i < sizeof(allowed) / sizeof(allowed[0]); i++)
+    {
+        if (allowed[i] == baudRate)
+        {
+            valid = true;
+            break;
+        }
+    }
+    if (!valid)
+    {
+        if (_debug)
+        {
+            Serial.print("Error: setBaudRate received an unrecognized baud rate code: ");
+            Serial.println(baudRate);
+        }
+        return 1; // error code indicating invalid baud rate.
+    }
+    return writeRegister(8, baudRate, 1);
+}
+
 uint8_t DynamixelLL::setReturnDelayTime(uint32_t delayTime)
 {
      return writeRegister(9, delayTime, 1);
