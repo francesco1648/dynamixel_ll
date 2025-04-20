@@ -60,10 +60,10 @@ void loop() {
   Serial.println("\nInitial Position sent to motors\n");
   delay(3000);
 
-  motor1.getPresentPosition(getpositions[0]);
+  // Read and show present position from the both motors.
+  dxl.syncRead(132, 4, motorIDs, getpositions, numMotors);
   Serial.print("Initial Position of the first motor: ");
   Serial.println(getpositions[0]);
-  motor2.getPresentPosition(getpositions[1]);
   Serial.print("Initial Position of the second motor: ");
   Serial.println(getpositions[1]);
 
@@ -77,10 +77,9 @@ void loop() {
   Serial.println("\nFinal Position sent to motors");
   delay(3000);
 
-  motor1.getPresentPosition(getpositions[0]);
+  dxl.syncRead(132, 4, motorIDs, getpositions, numMotors);
   Serial.print("Final Position of the first motor: ");
   Serial.println(getpositions[0]);
-  motor2.getPresentPosition(getpositions[1]);
   Serial.print("Final Position of the second motor: ");
   Serial.println(getpositions[1]);
 

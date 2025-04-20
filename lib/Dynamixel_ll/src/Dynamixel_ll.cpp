@@ -157,7 +157,7 @@ uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t value, uint8_t siz
     // Invio del pacchetto
     sendPacket(packet, lenNoCRC + 2); // Invia il pacchetto con CRC
     delay(time_delay);
-   StatusPacket response = recivePacket(sizeResponse); // Legge la risposta
+   StatusPacket response = receivePacket(sizeResponse); // Legge la risposta
     if (!response.valid || response.error != 0)
     {
         if (_debug)
@@ -174,48 +174,62 @@ uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t value, uint8_t siz
 }
 
 
+// Construct a READ instruction packet to read a register from the servo.
 uint8_t DynamixelLL::readRegister(uint16_t address, uint32_t &value, uint8_t size)
 {
+    //   - Parameter 1 & 2: starting address (LSB, MSB)
+    //   - Parameter 3 & 4: data length (LSB, MSB)
     uint8_t packet[14];
-    uint16_t length = 7;
+    uint16_t length = 7; // 4 parameter bytes + 3 = 7
 
+    // Header (4 bytes): 0xFF, 0xFF, 0xFD, 0x00
     packet[0] = 0xFF;
     packet[1] = 0xFF;
     packet[2] = 0xFD;
     packet[3] = 0x00;
+
+    // ID (1 byte): _servoID
     packet[4] = _servoID;
+
+    // Length (2 bytes): LSB and MSB of (parameter count + 3)
     packet[5] = length & 0xFF;
     packet[6] = (length >> 8) & 0xFF;
-    packet[7] = 0x02; // READ
+
+    // Instruction (1 byte): 0x02 (READ)
+    packet[7] = 0x02; // READ instruction
+
+    // Parameters (4 bytes): starting address (2 bytes) + data length (2 bytes)
     packet[8] = address & 0xFF;
     packet[9] = (address >> 8) & 0xFF;
     packet[10] = size & 0xFF;
     packet[11] = (size >> 8) & 0xFF;
-
+    
+    // Compute CRC for the packet excluding the CRC bytes (first 12 bytes).
     uint16_t crc = calculateCRC(packet, 12);
     packet[12] = crc & 0xFF;
     packet[13] = (crc >> 8) & 0xFF;
-
+    
+    // Send the packet over the serial interface.
     sendPacket(packet, 14);
     delay(time_delay);
-
-    StatusPacket response = recivePacket(size);
-    if (!response.valid || response.error != 0)
-    {
-        if (_debug)
-        {
-            Serial.print("Errore nella risposta: ");
+    
+    // Receive the response packet.
+    StatusPacket response = receivePacket(size);
+    
+    // Check for errors in the status packet.
+    if (!response.valid || response.error != 0) {
+        if (_debug) {
+            Serial.print("Error in response: ");
             Serial.println(response.error, HEX);
         }
-
     }
 
-    // Converte i dati in uint32_t (little-endian)
+    // Convert the little-endian byte array to a uint32_t value.
     value = 0;
-    for (uint8_t i = 0; i < response.dataLength; i++)
-    {
+    for (uint8_t i = 0; i < response.dataLength; i++) {
         value |= (response.data[i] << (8 * i));
     }
+    
     delay(time_delay);
     return response.error;
 }
@@ -240,84 +254,162 @@ void DynamixelLL::sendPacket(const uint8_t *packet, size_t length)
 }
 
 
-StatusPacket DynamixelLL::recivePacket(uint8_t expectedParams)
+/**
+ * @brief Receives and parses a complete Status Packet from the Dynamixel bus.
+ *
+ * This function implements a sliding-window mechanism to locate the packet header
+ * (0xFF, 0xFF, 0xFD, 0x00) in the incoming byte stream. Once the header is found,
+ * it reads the next 3 bytes (ID and LENGTH field) to determine the expected packet size:
+ * total packet length = 7 + LENGTH.
+ *
+ * It then waits until the entire packet is received or a timeout occurs. After this,
+ * it checks the instruction, extracts the error and parameter bytes, and validates the CRC.
+ *
+ * @param expectedParams Number of parameter bytes expected in the packet.
+ * @return StatusPacket A structure with members:
+ *         - valid: true if the packet is correctly received and passes the CRC check.
+ *         - error: the error code from the Status Packet.
+ *         - data: up to 4 bytes of returned parameter data.
+ *         - dataLength: the number of parameter bytes read.
+ *         If any error occurs (timeout, header error, CRC error), valid remains false.
+ */
+StatusPacket DynamixelLL::receivePacket(uint8_t expectedParams)
 {
     StatusPacket result = {false, 0, {0}, 0};
 
-    uint8_t response[20]; // Buffer per la risposta
-    size_t index = 0;
-    unsigned long start = millis();
-    const unsigned long timeout = 1000;
+    const size_t maxPacketSize = 64;         // Maximum allowed packet size.
+    uint8_t buffer[maxPacketSize];           // Buffer for incoming bytes.
+    uint16_t index = 0;                      // Current number of bytes in the buffer.
+    bool headerFound = false;                // Flag to indicate header detection.
+    
+    uint32_t start = millis();
+    const uint32_t timeout = 1000;           // Timeout in milliseconds.
 
-    // Attesa risposta
-    while (millis() - start < timeout && index < sizeof(response))
+    // --- Step 1. Search for the 4-byte header ---
+    // We use a sliding window to detect 0xFF, 0xFF, 0xFD, 0x00.
+    while ((millis() - start) < timeout && index < maxPacketSize)
     {
         if (_serial.available())
         {
-            response[index++] = _serial.read();
+            uint8_t b = _serial.read();
+            buffer[index++] = b;
+            // When we have at least 4 bytes, check the last 4 bytes.
+            if (index >= 4)
+            {
+                if (buffer[index - 4] == 0xFF &&
+                    buffer[index - 3] == 0xFF &&
+                    buffer[index - 2] == 0xFD &&
+                    buffer[index - 1] == 0x00)
+                {
+                    headerFound = true;
+                    break;  // We found the header.
+                }
+            }
         }
     }
-
-    if (index < 7)
+    if (!headerFound)
     {
         if (_debug)
         {
-            Serial.println("Risposta troppo corta");
+            Serial.println("Header not found within timeout");
         }
         return result;
     }
 
-    // Controllo intestazione
-    if (!(response[0] == 0xFF && response[1] == 0xFF && response[2] == 0xFD && response[3] == 0x00))
+    // The header start is at index-4.
+    uint16_t headerStart = index - 4;
+
+    // --- Step 2. Read the next 3 bytes to complete the fixed header fields (ID and LENGTH) ---
+    while ((millis() - start) < timeout && (index - headerStart) < 7 && index < maxPacketSize)
+    {
+        if (_serial.available())
+        {
+            buffer[index++] = _serial.read();
+        }
+    }
+    if ((index - headerStart) < 7)
+    {
+        if (_debug) { Serial.println("Timeout waiting for header extension"); }
+        return result;
+    }
+
+    // At this point, buffer[headerStart..headerStart+3] contains the header:
+    // and buffer[headerStart+4] is the device ID, buffer[headerStart+5] and buffer[headerStart+6]
+    // give the LENGTH field (little-endian).
+    uint8_t id = buffer[headerStart + 4];
+    uint16_t lengthField = buffer[headerStart + 5] | (buffer[headerStart + 6] << 8);
+    // Total packet length = 7 (header + ID + length field) + lengthField.
+    uint16_t totalPacketLength = 7 + lengthField;
+
+    // --- Step 3. Wait until the full packet is received ---
+    while ((millis() - start) < timeout && (index - headerStart) < totalPacketLength && index < maxPacketSize)
+    {
+        if (_serial.available())
+        {
+            buffer[index++] = _serial.read();
+        }
+    }
+    if ((index - headerStart) < totalPacketLength)
     {
         if (_debug)
         {
-            Serial.println("Header non valido");
+            Serial.println("Incomplete packet received (timeout)");
         }
         return result;
     }
 
-    // ID, lunghezza, istruzione
-    uint8_t id = response[4];
-    uint16_t length = response[5] | (response[6] << 8);
-    uint8_t instruction = response[7];
+    // --- Step 4. Debug: Print the received packet ---
+    if (_debug)
+    {
+        Serial.print("Received Packet: ");
+        for (uint16_t i = headerStart; i < headerStart + totalPacketLength; i++)
+        {
+            Serial.print("0x");
+            if (buffer[i] < 0x10)
+                Serial.print("0");
+            Serial.print(buffer[i], HEX);
+            Serial.print(" ");
+        }
+        Serial.println();
+    }
 
+    // --- Step 5. Parse and validate the packet ---
+    // Packet structure:
+    // Bytes 0-3: Header (0xFF, 0xFF, 0xFD, 0x00)
+    // Byte 4: Device ID
+    // Bytes 5-6: LENGTH field (little-endian)
+    // Byte 7: Instruction (should be 0x55 for a Status Packet)
+    // Byte 8: Error
+    // Bytes 9 to 9+(paramLength-1): Parameter Data (paramLength = lengthField - 4)
+    // Final 2 bytes: CRC (little-endian)
+    uint8_t instruction = buffer[headerStart + 7];
     if (instruction != 0x55)
-    { // Status packet
+    {
         if (_debug)
         {
-            Serial.println("Istruzione non valida nella risposta");
+            Serial.println("Invalid instruction value; expected status packet (0x55)");
         }
         return result;
     }
+    result.error = buffer[headerStart + 8];
 
-    // Errore
-    result.error = response[8];
-
-    // Dati (se presenti)
-    size_t paramLength = length - 4; // Escludi: instruction (1), error (1), CRC (2)
-    if (paramLength != expectedParams)
-    {
-        if (_debug)
-        {
-            Serial.println("Numero di parametri inatteso");
-        }
-    }
-
-    for (size_t i = 0; i < paramLength && i < 4; i++)
-    {
-        result.data[i] = response[9 + i];
-    }
+    // Expected parameter length is (lengthField - 4).
+    uint8_t paramLength = lengthField - 4;
     result.dataLength = paramLength;
+    for (uint8_t i = 0; i < paramLength && i < 4; i++)
+    {
+        result.data[i] = buffer[headerStart + 9 + i];
+    }
 
-    // CRC
-    uint16_t receivedCRC = response[9 + paramLength] | (response[10 + paramLength] << 8);
-    uint16_t computedCRC = calculateCRC(response, 9 + paramLength);
+    // Read the CRC from the packet.
+    uint16_t receivedCRC = buffer[headerStart + 9 + paramLength] | (buffer[headerStart + 10 + paramLength] << 8);
+    // Compute CRC over the complete packet excluding the 2 CRC bytes.
+    uint16_t computedCRC = calculateCRC(&buffer[headerStart], 9 + paramLength);
     if (receivedCRC != computedCRC)
     {
         if (_debug)
         {
-            Serial.println("CRC non valido");
+            Serial.println("CRC invalid");
         }
         return result;
     }
@@ -327,7 +419,8 @@ StatusPacket DynamixelLL::recivePacket(uint8_t expectedParams)
 }
 
 
-uint8_t DynamixelLL::ping( uint32_t &value){
+uint8_t DynamixelLL::ping(uint32_t &value)
+{
 
     uint8_t packet[10]; // header + id + length + instruction + address + data + crc
 
@@ -356,7 +449,7 @@ uint8_t DynamixelLL::ping( uint32_t &value){
     // Invio del pacchetto
     sendPacket(packet, lenNoCRC + 2); // Invia il pacchetto con CRC
     delay(time_delay);
-    StatusPacket response = recivePacket(14);
+    StatusPacket response = receivePacket(14);
 
     value = 0;
     for (uint8_t i = 0; i < response.dataLength; i++)
@@ -527,6 +620,138 @@ bool DynamixelLL::sendRawPacket(const uint8_t* packet, uint16_t length)
 }
 
 
+/**
+ * @brief Builds and sends a Sync Read instruction packet.
+ * 
+ * Packet structure:
+ *   Header (4 bytes):               0xFF, 0xFF, 0xFD, 0x00
+ *   Packet ID (1 byte):             Broadcast ID (0xFE)
+ *   Length (2 bytes):               (Fixed parameters + device IDs + 3), little-endian.
+ *   Instruction (1 byte):           0x82 (Sync Read)
+ *   Fixed Parameters (4 bytes):     starting address (2 bytes, LSB first) and data length (2 bytes, LSB first)
+ *   Device ID(s) (1 per device):    The list of device IDs to read.
+ *   CRC (2 bytes):                  Calculated over all previous bytes.
+ * 
+ * @param address     Starting register address to read.
+ * @param dataLength  Number of bytes to read per device.
+ * @param ids         Array of device IDs.
+ * @param count       Count of devices.
+ * @return true if the packet was sent successfully, false otherwise.
+ */
+bool DynamixelLL::sendSyncReadPacket(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint8_t count)
+{
+    // Fixed parameter block = 4 bytes (address (2) + dataLength (2))
+    const uint16_t fixedParamLength = 4;
+    const uint16_t paramBlockLength = fixedParamLength + count; // Add 1 byte per device.
+    
+    // LENGTH = (Parameter count + 3)
+    uint16_t lengthField = paramBlockLength + 3;
+    
+    // Total packet size:
+    //   Header (4) + Packet ID (1) + Length (2) + Instruction (1) +
+    //   Parameter Block (parametersLength) + CRC (2)
+    uint16_t packetSize = 10 + paramBlockLength;
+    uint8_t packet[packetSize];
+    uint16_t idx = 0;
+    
+    // Header (4 bytes)
+    packet[idx++] = 0xFF;
+    packet[idx++] = 0xFF;
+    packet[idx++] = 0xFD;
+    packet[idx++] = 0x00;
+    
+    // Packet ID (1 byte): Broadcast ID (0xFE)
+    packet[idx++] = 0xFE;
+    
+    // Length (2 bytes) - little-endian.
+    packet[idx++] = lengthField & 0xFF;
+    packet[idx++] = (lengthField >> 8) & 0xFF;
+    
+    // Instruction (1 byte): Sync Read (0x82)
+    packet[idx++] = 0x82;
+    
+    // Fixed Parameters (4 bytes):
+    // Starting address (2 bytes, little-endian)
+    packet[idx++] = address & 0xFF;
+    packet[idx++] = (address >> 8) & 0xFF;
+    // Data length (2 bytes, little-endian)
+    packet[idx++] = dataLength & 0xFF;
+    packet[idx++] = (dataLength >> 8) & 0xFF;
+    
+    // Device IDs (1 byte for each device)
+    for (uint8_t i = 0; i < count; ++i) {
+        packet[idx++] = ids[i];
+    }
+    
+    // Compute CRC for the packet (excluding the final 2 CRC bytes)
+    uint16_t crc = calculateCRC(packet, packetSize - 2);
+    packet[idx++] = crc & 0xFF;       // CRC LSB
+    packet[idx++] = (crc >> 8) & 0xFF;  // CRC MSB
+    
+    // Optionally, print packet for debugging.
+    if (_debug) {
+        Serial.print("Sync Read Packet: ");
+        for (uint16_t i = 0; i < packetSize; ++i) {
+            Serial.print("0x");
+            if (packet[i] < 0x10) Serial.print("0");
+            Serial.print(packet[i], HEX);
+            Serial.print(" ");
+        }
+        Serial.println();
+    }
+    
+    // Send the assembled packet.
+    return sendRawPacket(packet, packetSize);
+}
+
+
+/**
+ * @brief Performs a Sync Read from multiple devices.
+ * 
+ * This function sends a Sync Read command and then reads a Status Packet from each device.
+ * The received data is converted from little-endian format into a 32-bit value and stored in the provided array.
+ *
+ * @param address     Starting register address to read.
+ * @param dataLength  Number of bytes to read per device.
+ * @param ids         Array of device IDs.
+ * @param values      Output array to store the 32-bit values read from each device.
+ * @param count       Count of devices.
+ * @return uint8_t  Returns 0 if all responses are OK.
+ *                  If sending fails, returns SYNC_READ_ERR_SEND.
+ *                  Or if any status packet indicates an error, returns the nonzero error code.
+ */
+uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count)
+{
+    // Send Sync Read Instruction Packet.
+    if (!sendSyncReadPacket(address, dataLength, ids, count)) {
+        if (_debug) {
+            Serial.println("Error sending Sync Read packet.");
+        }
+        return SYNC_READ_ERR_SEND;
+    }
+    
+    uint8_t retError = 0;
+    // For each device, read its response.
+    for (uint8_t i = 0; i < count; i++) {
+        StatusPacket response = receivePacket(dataLength);
+        if (!response.valid || response.error != 0) {
+            if (_debug) {
+                Serial.print("Error in status packet from device ");
+                Serial.print(ids[i]);
+                Serial.print(": 0x");
+                Serial.println(response.error, HEX);
+            }
+            retError = response.error;
+        }
+        // Convert the little-endian data bytes into a 32-bit value.
+        uint32_t value = 0;
+        for (uint8_t j = 0; j < response.dataLength; j++) {
+            value |= (response.data[j] << (8 * j));
+        }
+        values[i] = value;
+    }
+    
+    return retError;
 }
 
 

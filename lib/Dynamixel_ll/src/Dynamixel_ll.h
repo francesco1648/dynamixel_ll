@@ -1,6 +1,9 @@
 #ifndef DYNAMIXEL_LL_H
 #define DYNAMIXEL_LL_H
 
+// define a special error code for sendSyncReadPacket return
+#define SYNC_READ_ERR_SEND 0xFF
+
 #include <Arduino.h>
 struct StatusPacket
 {
@@ -60,6 +63,7 @@ public:
     
     uint8_t ping(uint32_t &value);
     bool syncWrite(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count);
+    uint8_t syncRead(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count);
 
 private:
     HardwareSerial &_serial;
@@ -67,13 +71,14 @@ private:
     bool _debug = false;
     uint8_t _error;
 
-    StatusPacket recivePacket(uint8_t expectedParams);
+    StatusPacket receivePacket(uint8_t expectedParams);
     uint16_t calculateCRC(const uint8_t *data, size_t length);
     uint8_t writeRegister(uint16_t address, uint32_t value, uint8_t size, uint8_t sizeResponse = 11);
     uint8_t readRegister(uint16_t address, uint32_t &value, uint8_t size);
 
     void sendPacket(const uint8_t *packet, size_t length);
     bool sendSyncWritePacket(const uint8_t* parameters, uint16_t parametersLength);
+    bool sendSyncReadPacket(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint8_t count);
     bool sendRawPacket(const uint8_t* packet, uint16_t length);
 
 };
