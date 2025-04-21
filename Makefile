@@ -109,7 +109,7 @@ help:
 	@echo "  make upload_bootsel - Upload the .uf2 file manually to E:/"
 	@echo "  make monitor       - Start the serial monitor"
 	@echo "  make all           - Compile and upload the project in one step"
-	@echo "  make clean         - Clean compilation files"
+	@echo "  make clean_all     - Clean compilation files"
 	@echo "  make help          - Show this guide"
 	@echo "  make auto_com_port - Automatically detect the list of COM port of the Raspberry Pi Pico"
 	@echo "  make port          - List all available COM ports"
