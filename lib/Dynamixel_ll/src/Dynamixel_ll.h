@@ -269,7 +269,7 @@ private:
      * @param length Number of bytes in the data block.
      * @return uint16_t The computed 16-bit CRC value.
      */
-    uint16_t calculateCRC(const uint8_t *data, size_t length);
+    uint16_t calculateCRC(const uint8_t *data, uint8_t length);
 
     /**
      * @brief Writes a value to a register.
@@ -295,7 +295,7 @@ private:
      * @param packet Pointer to the packet data.
      * @param length Length of the packet.
      */
-    void sendPacket(const uint8_t *packet, size_t length);
+    void sendPacket(const uint8_t *packet, uint8_t length);
 
     /**
      * @brief Sends a synchronous write packet.

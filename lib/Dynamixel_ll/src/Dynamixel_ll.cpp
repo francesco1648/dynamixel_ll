@@ -25,7 +25,7 @@ void DynamixelLL::ledOff()
 
 
 
-uint16_t DynamixelLL::calculateCRC(const uint8_t *data_blk_ptr, size_t data_blk_size)
+uint16_t DynamixelLL::calculateCRC(const uint8_t *data_blk_ptr, uint8_t data_blk_size)
 {
     unsigned short crc_table[256] = {
         0x0000, 0x8005, 0x800F, 0x000A, 0x801B, 0x001E, 0x0014, 0x8011,
@@ -62,7 +62,7 @@ uint16_t DynamixelLL::calculateCRC(const uint8_t *data_blk_ptr, size_t data_blk_
         0x8213, 0x0216, 0x021C, 0x8219, 0x0208, 0x820D, 0x8207, 0x0202};
 
     uint16_t crc_accum = 0;
-    for (size_t j = 0; j < data_blk_size; j++)
+    for (uint8_t j = 0; j < data_blk_size; j++)
     {
         uint16_t i = ((crc_accum >> 8) ^ data_blk_ptr[j]) & 0xFF;
         crc_accum = (crc_accum << 8) ^ crc_table[i];
@@ -153,7 +153,7 @@ uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t value, uint8_t siz
     }
 
     // Compute and Append the CRC
-    size_t lenNoCRC = 10 + size; // the packet length excluding the CRC field.
+    uint8_t lenNoCRC = 10 + size; // the packet length excluding the CRC field.
     uint16_t crc = calculateCRC(packet, lenNoCRC);
     packet[lenNoCRC]     = crc & 0xFF;         // Append CRC LSB.
     packet[lenNoCRC + 1] = (crc >> 8) & 0xFF;    // Append CRC MSB.
@@ -237,13 +237,13 @@ uint8_t DynamixelLL::readRegister(uint16_t address, uint32_t &value, uint8_t siz
 }
 
 
-void DynamixelLL::sendPacket(const uint8_t *packet, size_t length)
+void DynamixelLL::sendPacket(const uint8_t *packet, uint8_t length)
 {
     // If debug mode is enabled, print the packet contents in hexadecimal.
     if (_debug)
     {
         Serial.print("Sent Packet: ");
-        for (size_t i = 0; i < length; ++i)
+        for (uint8_t i = 0; i < length; ++i)
         {
             Serial.print("0x");
             // Print a leading zero for single-digit hex values.
@@ -265,7 +265,7 @@ StatusPacket DynamixelLL::receivePacket(uint8_t expectedParams)
     StatusPacket result = {false, 0, {0}, 0};
 
     // Setup buffer, index, timeout, etc.
-    const size_t maxPacketSize = 64;         // Maximum allowed packet size.
+    const uint8_t maxPacketSize = 64;         // Maximum allowed packet size.
     uint8_t buffer[maxPacketSize];           // Buffer for incoming bytes.
     uint16_t index = 0;                      // Index into the buffer.
     uint32_t start = millis();
@@ -395,7 +395,7 @@ uint8_t DynamixelLL::ping(uint32_t &value)
     packet[7] = 0x01;
 
     // Calculate and append the CRC.
-    size_t lenNoCRC = 8;
+    uint8_t lenNoCRC = 8;
     uint16_t crc = calculateCRC(packet, lenNoCRC);
     packet[lenNoCRC]     = crc & 0xFF;         // CRC LSB
     packet[lenNoCRC + 1] = (crc >> 8) & 0xFF;    // CRC MSB
@@ -750,7 +750,7 @@ uint8_t DynamixelLL::setBaudRate(uint8_t baudRate)
     bool valid = false;
     
     // Check that the provided baudRate code is within the allowed set.
-    for (size_t i = 0; i < sizeof(allowed) / sizeof(allowed[0]); i++) {
+    for (uint8_t i = 0; i < sizeof(allowed) / sizeof(allowed[0]); i++) {
         if (allowed[i] == baudRate) {
             valid = true;
             break;
