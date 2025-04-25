@@ -449,9 +449,7 @@ bool DynamixelLL::syncWrite(uint16_t address, uint8_t dataLength, const uint8_t*
         // Add the data bytes in little-endian order.
         uint32_t val = values[i];
         for (uint8_t j = 0; j < dataLength; j++)
-        {
             params[idx++] = (val >> (8 * j)) & 0xFF;
-        }
     }
 
     // With the complete parameter block built, send the full sync write packet.
@@ -497,9 +495,11 @@ bool DynamixelLL::sendSyncWritePacket(const uint8_t* parameters, uint16_t parame
     packet[idx++] = (crc >> 8) & 0xFF;     // CRC MSB
     
     // Optionally, print packet for debugging:
-    if (_debug) {
+    if (_debug)
+    {
         Serial.print("Sync Write Packet: ");
-        for (uint16_t i = 0; i < packetSize; ++i) {
+        for (uint16_t i = 0; i < packetSize; ++i)
+        {
             Serial.print("0x");
             if (packet[i] < 0x10)
                 Serial.print("0");
@@ -517,9 +517,8 @@ bool DynamixelLL::sendSyncWritePacket(const uint8_t* parameters, uint16_t parame
 bool DynamixelLL::sendRawPacket(const uint8_t* packet, uint16_t length)
 {
     // Clear any pending data from the serial input buffer.
-    while (_serial.available()) {
+    while (_serial.available())
         _serial.read();
-    }
 
     // Write the entire packet in one go.
     size_t bytesWritten = _serial.write(packet, length);
@@ -543,7 +542,7 @@ bool DynamixelLL::sendSyncReadPacket(uint16_t address, uint8_t dataLength, const
     
     // Total packet size:
     //   Header (4) + Packet ID (1) + Length (2) + Instruction (1) +
-    //   Parameter Block (parametersLength) + CRC (2)
+    //   Parameter Block (paramBlockLength) + CRC (2)
     uint16_t packetSize = 10 + paramBlockLength;
     uint8_t packet[packetSize];
     uint16_t idx = 0;
@@ -573,9 +572,8 @@ bool DynamixelLL::sendSyncReadPacket(uint16_t address, uint8_t dataLength, const
     packet[idx++] = (dataLength >> 8) & 0xFF;
     
     // Device IDs (1 byte for each device)
-    for (uint8_t i = 0; i < count; ++i) {
+    for (uint8_t i = 0; i < count; ++i)
         packet[idx++] = ids[i];
-    }
     
     // Compute CRC for the packet (excluding the final 2 CRC bytes)
     uint16_t crc = calculateCRC(packet, packetSize - 2);
@@ -583,9 +581,11 @@ bool DynamixelLL::sendSyncReadPacket(uint16_t address, uint8_t dataLength, const
     packet[idx++] = (crc >> 8) & 0xFF;  // CRC MSB
     
     // Optionally, print packet for debugging.
-    if (_debug) {
+    if (_debug)
+    {
         Serial.print("Sync Read Packet: ");
-        for (uint16_t i = 0; i < packetSize; ++i) {
+        for (uint16_t i = 0; i < packetSize; ++i)
+        {
             Serial.print("0x");
             if (packet[i] < 0x10)
                 Serial.print("0");
@@ -603,19 +603,22 @@ bool DynamixelLL::sendSyncReadPacket(uint16_t address, uint8_t dataLength, const
 uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count)
 {
     // Send Sync Read Instruction Packet.
-    if (!sendSyncReadPacket(address, dataLength, ids, count)) {
-        if (_debug) {
+    if (!sendSyncReadPacket(address, dataLength, ids, count))
+    {
+        if (_debug)
             Serial.println("Error sending Sync Read packet.");
-        }
         return 1;
     }
     
     uint8_t retError = 0;
     // For each device, read its response.
-    for (uint8_t i = 0; i < count; i++) {
+    for (uint8_t i = 0; i < count; i++)
+    {
         StatusPacket response = receivePacket(dataLength);
-        if (!response.valid || response.error != 0) {
-            if (_debug) {
+        if (!response.valid || response.error != 0)
+        {
+            if (_debug)
+            {
                 Serial.print("Error in status packet from device ");
                 Serial.print(ids[i]);
                 Serial.print(": 0x");
@@ -625,9 +628,8 @@ uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_
         }
         // Convert the little-endian data bytes into a 32-bit value.
         uint32_t value = 0;
-        for (uint8_t j = 0; j < response.dataLength; j++) {
+        for (uint8_t j = 0; j < response.dataLength; j++)
             value |= (response.data[j] << (8 * j));
-        }
         values[i] = value;
     }
     
