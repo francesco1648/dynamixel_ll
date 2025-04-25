@@ -635,6 +635,203 @@ uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_
 }
 
 
+bool DynamixelLL::bulkWrite(const uint8_t* ids, uint16_t* addresses, uint8_t* dataLengths, uint32_t* values, uint8_t count)
+{
+    // Each device block consists of: 1 byte (Device ID) + 2 bytes (starting address)
+    // + 2 bytes (data length) + data length bytes (data).
+    uint16_t paramBlockLength = 0;
+    for (uint8_t i = 0; i < count; i++)
+        paramBlockLength += 5 + dataLengths[i];
+
+    // Create a local buffer to hold the entire parameter block.
+    uint8_t params[paramBlockLength];
+    uint16_t idx = 0;
+
+    // Append each device's parameter block.
+    for (uint8_t i = 0; i < count; i++)
+    {
+        // Add device ID.
+        params[idx++] = ids[i];
+        // Add Starting address (LSB, MSB)
+        params[idx++] = addresses[i] & 0xFF;
+        params[idx++] = (addresses[i] >> 8) & 0xFF;
+        // Add Data Length (LSB, MSB)
+        params[idx++] = dataLengths[i] & 0xFF;
+        params[idx++] = (dataLengths[i] >> 8) & 0xFF;
+        // Add the data bytes in little-endian order.
+        uint32_t val = values[i];
+        for (uint8_t j = 0; j < dataLengths[i]; j++)
+            params[idx++] = (val >> (8 * j)) & 0xFF;
+    }
+
+    // With the complete parameter block built, send the full bulk write packet.
+    return sendBulkWritePacket(params, paramBlockLength);
+}
+
+
+bool DynamixelLL::sendBulkWritePacket(const uint8_t* parameters, uint16_t parametersLength)
+{
+    // Calculate Length field = Parameter Block length + 3 (Instruction + CRC)
+    uint16_t lengthField = parametersLength + 3;
+    
+    // Total packet size:
+    //   Header (4) + Packet ID (1) + Length (2) + Instruction (1) +
+    //   Parameter Block (parametersLength) + CRC (2)
+    uint16_t packetSize = 10 + parametersLength;
+    uint8_t packet[packetSize];
+    uint16_t idx = 0;
+    
+    // Build Header (4 bytes)
+    packet[idx++] = 0xFF;
+    packet[idx++] = 0xFF;
+    packet[idx++] = 0xFD;
+    packet[idx++] = 0x00;
+
+    // Packet ID (Broadcast ID: 0xFE)
+    packet[idx++] = 0xFE;
+
+    // Length (2 bytes): (Parameter Count + 3) in little-endian.
+    packet[idx++] = lengthField & 0xFF;          // LSB
+    packet[idx++] = (lengthField >> 8) & 0xFF;     // MSB
+
+    // Instruction (1 byte): Bulk Write (0x93)
+    packet[idx++] = 0x93;
+    
+    // Copy the parameter block.
+    memcpy(&packet[idx], parameters, parametersLength);
+    idx += parametersLength;
+    
+    // Compute and append CRC (2 bytes).
+    uint16_t crc = calculateCRC(packet, packetSize - 2);
+    packet[idx++] = crc & 0xFF;          // CRC LSB
+    packet[idx++] = (crc >> 8) & 0xFF;     // CRC MSB
+    
+    // Optionally, print packet for debugging:
+    if (_debug)
+    {
+        Serial.print("Bulk Write Packet: ");
+        for (uint16_t i = 0; i < packetSize; ++i)
+        {
+            Serial.print("0x");
+            if (packet[i] < 0x10)
+                Serial.print("0");
+            Serial.print(packet[i], HEX);
+            Serial.print(" ");
+        }
+        Serial.println();
+    }
+    
+    // Send the assembled packet.
+    return sendRawPacket(packet, packetSize);
+}
+
+
+bool DynamixelLL::sendBulkReadPacket(const uint8_t* ids, uint16_t* addresses, uint8_t* dataLengths, uint8_t count)
+{
+    // parameter length: 1 byte (Device ID) + 2 bytes (starting address) + 2 bytes (data length)
+    const uint16_t paramBlockLength = 5 * count; // 5 bytes per device.
+    
+    // LENGTH = (Parameter count + 3)
+    uint16_t lengthField = paramBlockLength + 3;
+    
+    // Total packet size:
+    //   Header (4) + Packet ID (1) + Length (2) + Instruction (1) +
+    //   Parameter Block (paramBlockLength) + CRC (2)
+    uint16_t packetSize = 10 + paramBlockLength;
+    uint8_t packet[packetSize];
+    uint16_t idx = 0;
+    
+    // Header (4 bytes)
+    packet[idx++] = 0xFF;
+    packet[idx++] = 0xFF;
+    packet[idx++] = 0xFD;
+    packet[idx++] = 0x00;
+    
+    // Packet ID (1 byte): Broadcast ID (0xFE)
+    packet[idx++] = 0xFE;
+    
+    // Length (2 bytes) - little-endian.
+    packet[idx++] = lengthField & 0xFF;
+    packet[idx++] = (lengthField >> 8) & 0xFF;
+    
+    // Instruction (1 byte): Bulk Read (0x92)
+    packet[idx++] = 0x92;
+
+    // Parameter Block (5 bytes per device):
+    for (uint8_t i = 0; i < count; ++i)
+    {
+        // Device IDs (1 byte for each device)
+        packet[idx++] = ids[i];
+        // Starting address (2 bytes, little-endian)
+        packet[idx++] = addresses[i] & 0xFF;
+        packet[idx++] = (addresses[i] >> 8) & 0xFF;
+        // Data length (2 bytes, little-endian)
+        packet[idx++] = dataLengths[i] & 0xFF;
+        packet[idx++] = (dataLengths[i] >> 8) & 0xFF;
+    }
+    
+    // Compute CRC for the packet (excluding the final 2 CRC bytes)
+    uint16_t crc = calculateCRC(packet, packetSize - 2);
+    packet[idx++] = crc & 0xFF;       // CRC LSB
+    packet[idx++] = (crc >> 8) & 0xFF;  // CRC MSB
+    
+    // Optionally, print packet for debugging.
+    if (_debug)
+    {
+        Serial.print("Bulk Read Packet: ");
+        for (uint16_t i = 0; i < packetSize; ++i)
+        {
+            Serial.print("0x");
+            if (packet[i] < 0x10)
+                Serial.print("0");
+            Serial.print(packet[i], HEX);
+            Serial.print(" ");
+        }
+        Serial.println();
+    }
+    
+    // Send the assembled packet.
+    return sendRawPacket(packet, packetSize);
+}
+
+
+uint8_t DynamixelLL::bulkRead(const uint8_t* ids, uint16_t* addresses, uint8_t* dataLengths, uint32_t* values, uint8_t count)
+{
+    // Send Bulk Read Instruction Packet.
+    if (!sendBulkReadPacket(ids, addresses, dataLengths, count))
+    {
+        if (_debug)
+            Serial.println("Error sending Bulk Read packet.");
+        return 1;
+    }
+    
+    uint8_t retError = 0;
+    // For each device, read its response.
+    for (uint8_t i = 0; i < count; i++)
+    {
+        StatusPacket response = receivePacket(dataLengths[i]);
+        if (!response.valid || response.error != 0)
+        {
+            if (_debug)
+            {
+                Serial.print("Error in status packet from device ");
+                Serial.print(ids[i]);
+                Serial.print(": 0x");
+                Serial.println(response.error, HEX);
+            }
+            retError = response.error;
+        }
+        // Convert the little-endian data bytes into a 32-bit value.
+        uint32_t value = 0;
+        for (uint8_t j = 0; j < response.dataLength; j++)
+            value |= (response.data[j] << (8 * j));
+        values[i] = value;
+    }
+    
+    return retError;
+}
+
+
 // ===============================
 // ==  Control Table Functions  ==
 // ===============================

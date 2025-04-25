@@ -291,6 +291,28 @@ private:
     uint8_t readRegister(uint16_t address, uint32_t &value, uint8_t size);
 
     /**
+     * @brief Performs a bulk write to multiple devices.
+     * @param ids Array of device IDs.
+     * @param addresses Array of register addresses.
+     * @param dataLengths Array of data lengths (in bytes) for each device.
+     * @param values Array of 32-bit values.
+     * @param count Number of devices.
+     * @return bool True if the packet was sent successfully.
+     */
+    bool bulkWrite(const uint8_t* ids, uint16_t* addresses, uint8_t* dataLengths, uint32_t* values, uint8_t count);
+
+    /**
+     * @brief Performs a bulk read from multiple devices.
+     * @param ids Array of device IDs.
+     * @param addresses Array of register addresses.
+     * @param dataLengths Array of data lengths (in bytes) for each device.
+     * @param values Array to store 32-bit output values.
+     * @param count Number of devices.
+     * @return uint8_t 0 if all responses are received successfully.
+     */
+    uint8_t bulkRead(const uint8_t* ids, uint16_t* addresses, uint8_t* dataLengths, uint32_t* values, uint8_t count);
+
+    /**
      * @brief Sends a packet over the serial interface.
      * @param packet Pointer to the packet data.
      * @param length Length of the packet.
@@ -314,6 +336,24 @@ private:
      * @return bool True if sent successfully.
      */
     bool sendSyncReadPacket(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint8_t count);
+
+    /**
+     * @brief Sends a bulk write command.
+     * @param parameters Parameter block for the write.
+     * @param parametersLength Length of the parameter block.
+     * @return bool True if sent successfully.
+     */
+    bool sendBulkWritePacket(const uint8_t* parameters, uint16_t parametersLength);
+
+    /**
+     * @brief Sends a bulk read command.
+     * @param ids Array of device IDs.
+     * @param addresses Array of register addresses.
+     * @param dataLengths Array of data lengths (in bytes) for each device.
+     * @param count Number of devices.
+     * @return bool True if sent successfully.
+     */
+    bool sendBulkReadPacket(const uint8_t* ids, uint16_t* addresses, uint8_t* dataLengths, uint8_t count);
 
     /**
      * @brief Sends a raw packet over the serial interface.
