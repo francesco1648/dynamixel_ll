@@ -607,7 +607,7 @@ uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_
         if (_debug) {
             Serial.println("Error sending Sync Read packet.");
         }
-        return SYNC_READ_ERR_SEND;
+        return 1;
     }
     
     uint8_t retError = 0;

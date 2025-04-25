@@ -9,9 +9,6 @@
  * @brief Interface for low‐level Dynamixel servo communication (Protocol 2.0).
  */
 
-// Define a special error code for syncRead errors.
-#define SYNC_READ_ERR_SEND 0xFF
-
 #include <Arduino.h>
 
 /**
