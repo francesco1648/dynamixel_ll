@@ -111,13 +111,59 @@ void DynamixelLL::setDebug(bool enable)
 }
 
 
+void DynamixelLL::enableSync(const uint8_t* motorIDs, uint8_t numMotors)
+{
+    // Check if the number of motors is valid (at least two motors).
+    if (numMotors < 2) {
+        if (_debug) {
+            Serial.println("Invalid number of motors for sync mode. Must be at least 2.");
+        }
+        return;
+    }
+
+    // If sync mode is already enabled, deallocate the previous array.
+    if (_sync && _motorIDs != nullptr) {
+        delete[] _motorIDs;
+    }
+
+    // Allocate memory for motor IDs and copy the contents of the input array.
+    _motorIDs = new uint8_t[numMotors];
+    for (uint8_t i = 0; i < numMotors; i++) {
+        _motorIDs[i] = motorIDs[i];
+    }
+
+    // Update sync variables.
+    _numMotors = numMotors;
+    _sync = true;
+}
+
+
+void DynamixelLL::disableSync()
+{
+    // Disable sync mode and clean up allocated memory.
+    if (_motorIDs != nullptr) {
+        delete[] _motorIDs;
+        _motorIDs = nullptr;
+    }
+    _numMotors = 1;
+    _sync = false;
+}
+
+
 // ===============================
 // ==   Instruction Functions   ==
 // ===============================
 
 
-uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t value, uint8_t size, uint8_t sizeResponse)
+uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t* value, uint8_t size, uint8_t sizeResponse)
 {
+    // Enable sync write pathline if _sync is set.
+    if (_sync)
+    {
+        syncWrite(address, size, _motorIDs, value, _numMotors);
+        return 0; // Assume success for sync write.
+    }
+
     // length: Instruction (1) + Address (2) + CRC (2) + Data (size bytes) = 5 + size.
     uint16_t length = 5 + size;
 
@@ -149,7 +195,7 @@ uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t value, uint8_t siz
     // Insert the Data bytes in little-endian order
     for (uint8_t i = 0; i < size; i++)
     {
-        packet[10 + i] = (value >> (8 * i)) & 0xFF;
+        packet[10 + i] = (*value >> (8 * i)) & 0xFF;
     }
 
     // Compute and Append the CRC
@@ -632,7 +678,7 @@ uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_
             value |= (response.data[j] << (8 * j));
         values[i] = value;
     }
-    
+
     return retError;
 }
 
@@ -844,9 +890,15 @@ uint8_t DynamixelLL::setOperatingMode(uint8_t mode)
     // Allowed: 1 = Velocity, 3 = Position, 4 = Extended Position, 16 = PWM.
     if (!(mode == 1 || mode == 3 || mode == 4 || mode == 16))
     {
+        if (_debug)
+                Serial.print("Error: Unsupported operating mode.");
         return 1; // error: unsupported mode is provided
     }
-    return writeRegister(11, mode, 1); // EEPROM address 11, 1 byte
+
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = mode;
+    return writeRegister(11, buffer, 1); // EEPROM address 11, 1 byte
 }
 
 
@@ -854,12 +906,17 @@ uint8_t DynamixelLL::setGoalPosition(uint16_t goalPosition)
 {
     // Note: The servo internally also limits the value;
     // the main purpose of the clamping here is to aid debugging.
-    if (goalPosition > 4095) {
+    if (goalPosition > 4095)
+    {
         goalPosition = 4095;
         if (_debug)
             Serial.println("Warning: Goal position clamped to 4095.");
     }
-    return writeRegister(116, goalPosition, 4); // RAM address 116, 4 bytes
+
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = goalPosition;
+    return writeRegister(116, buffer, 4); // RAM address 116, 4 bytes
 }
 
 
@@ -867,49 +924,60 @@ uint8_t DynamixelLL::setGoalPosition(float angleDegrees)
 {
     // Convert angle in degrees to pulses using conversion factor 0.088 [deg/pulse].
     uint32_t goalPosition = static_cast<uint32_t>(angleDegrees / 0.088);
-    if (goalPosition > 4095) {
+    if (goalPosition > 4095)
+    {
         goalPosition = 4095;
         if (_debug)
-        {
             Serial.println("Warning: Angle conversion resulted in value exceeding 4095, clamped.");
-        }
     }
-    return writeRegister(116, goalPosition, 4); // RAM address 116, 4 bytes
+
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = goalPosition;
+    return writeRegister(116, buffer, 4); // RAM address 116, 4 bytes
 }
 
 
 uint8_t DynamixelLL::setGoalPosition(int32_t extendedPosition)
 {
     // Clamp within valid range: -1,048,575 to +1,048,575 pulses.
-    if (extendedPosition > 1048575) {
+    if (extendedPosition > 1048575)
+    {
         extendedPosition = 1048575;
         if (_debug)
-        {
             Serial.println("Warning: Extended position clamped to 1048575.");
-        }
     } else if (extendedPosition < -1048575) {
         extendedPosition = -1048575;
         if (_debug)
-        {
             Serial.println("Warning: Extended position clamped to -1048575.");
-        }
     }
-    // Use two's complement representation for 4-byte register.
-    return writeRegister(116, static_cast<uint32_t>(extendedPosition), 4); // RAM address 116, 4 bytes
+
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = static_cast<uint32_t>(extendedPosition); // Use two's complement representation.
+    return writeRegister(116, buffer, 4); // RAM address 116, 4 bytes
 }
 
 
 uint8_t DynamixelLL::setTorqueEnable(bool enable)
 {
     uint8_t value = enable ? 1 : 0;
-    return writeRegister(64, value, 1); // RAM address 64, 1 byte
+
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = value;
+    return writeRegister(64, buffer, 1); // RAM address 64, 1 byte
 }
 
 
 uint8_t DynamixelLL::setLED(bool enable)
 {
     uint8_t value = enable ? 1 : 0;
-    return writeRegister(65, value, 1); // RAM address 65, 1 byte
+
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = value;
+    return writeRegister(65, buffer, 1); // RAM address 65, 1 byte
 }
 
 
@@ -919,12 +987,14 @@ uint8_t DynamixelLL::setStatusReturnLevel(uint8_t level)
     if (level > 2)
     {
         if (_debug)
-        {
             Serial.println("Error: Invalid status return level. Allowed values: 0, 1, or 2.");
-        }
         return 1; // Error code for invalid status return level.
     }
-    return writeRegister(68, level, 1); // RAM address 68, 1 byte
+
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = level;
+    return writeRegister(68, buffer, 1); // RAM address 68, 1 byte
 }
 
 
@@ -934,12 +1004,14 @@ uint8_t DynamixelLL::setID(uint8_t newID)
     if (newID > 253)
     {
         if (_debug)
-        {
             Serial.println("Error: Invalid ID. Valid IDs are 0 to 253.");
-        }
         return 1; // Error code for invalid ID.
     }
-    return writeRegister(7, newID, 1); // EEPROM address 7, 1 byte
+
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = newID;
+    return writeRegister(7, buffer, 1); // EEPROM address 7, 1 byte
 }
 
 
@@ -949,23 +1021,30 @@ uint8_t DynamixelLL::setBaudRate(uint8_t baudRate)
     bool valid = false;
     
     // Check that the provided baudRate code is within the allowed set.
-    for (uint8_t i = 0; i < sizeof(allowed) / sizeof(allowed[0]); i++) {
-        if (allowed[i] == baudRate) {
+    for (uint8_t i = 0; i < sizeof(allowed) / sizeof(allowed[0]); i++)
+    {
+        if (allowed[i] == baudRate)
+        {
             valid = true;
             break;
         }
     }
     
     // If the baud rate code is not valid, output a debug message and return an error code.
-    if (!valid) {
-        if (_debug) {
+    if (!valid)
+    {
+        if (_debug)
+        {
             Serial.print("Error: Unrecognized baud rate code: ");
             Serial.println(baudRate);
         }
         return 1;
     }
     
-    return writeRegister(8, baudRate, 1); // EEPROM address 8, 1 byte
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = baudRate;
+    return writeRegister(8, buffer, 1); // EEPROM address 8, 1 byte
 }
 
 
@@ -976,27 +1055,30 @@ uint8_t DynamixelLL::setReturnDelayTime(uint8_t delayTime)
     {
         delayTime = 254;
         if (_debug)
-        {
             Serial.println("Warning: setReturnDelayTime clamped to 254.");
-        }
     }
-    return writeRegister(9, delayTime, 1); // EEPROM address 9, 1 byte
+
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = delayTime;
+    return writeRegister(9, buffer, 1); // EEPROM address 9, 1 byte
 }
 
 
 uint8_t DynamixelLL::setDriveMode(bool torqueOnByGoalUpdate, bool timeBasedProfile, bool reverseMode)
 {
     uint8_t mode = 0;
-    if (torqueOnByGoalUpdate) {
+    if (torqueOnByGoalUpdate)
         mode |= 0x08; // Set Bit 3.
-    }
-    if (timeBasedProfile) {
+    if (timeBasedProfile)
         mode |= 0x04; // Set Bit 2.
-    }
-    if (reverseMode) {
+    if (reverseMode)
         mode |= 0x01; // Set Bit 0.
-    }
-    return writeRegister(10, mode, 1); // EEPROM address 10, 1 byte
+
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = mode;
+    return writeRegister(10, buffer, 1); // EEPROM address 10, 1 byte
 }
 
 
@@ -1013,15 +1095,20 @@ uint8_t DynamixelLL::setProfileVelocity(uint32_t profileVelocity)
     const uint32_t maxProfileVelocity = timeBased ? 32737UL : 32767UL;
     
     // Clamp the input value if it exceeds the allowed maximum.
-    if (profileVelocity > maxProfileVelocity) {
-        if (_debug) {
+    if (profileVelocity > maxProfileVelocity)
+    {
+        if (_debug)
+        {
             Serial.print("Profile velocity clamped to ");
             Serial.println(maxProfileVelocity);
         }
         profileVelocity = maxProfileVelocity;
     }
     
-    return writeRegister(112, profileVelocity, 4); // RAM address 112, 4 bytes
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = profileVelocity;
+    return writeRegister(112, buffer, 4); // RAM address 112, 4 bytes
 }
 
 
@@ -1038,8 +1125,10 @@ uint8_t DynamixelLL::setProfileAcceleration(uint32_t profileAcceleration)
     const uint32_t maxProfileAcceleration = timeBased ? 32737UL : 32767UL;
     
     // Clamp the input acceleration if it exceeds this maximum.
-    if (profileAcceleration > maxProfileAcceleration) {
-        if (_debug) {
+    if (profileAcceleration > maxProfileAcceleration)
+    {
+        if (_debug)
+        {
             Serial.print("Profile acceleration clamped to ");
             Serial.println(maxProfileAcceleration);
         }
@@ -1049,9 +1138,11 @@ uint8_t DynamixelLL::setProfileAcceleration(uint32_t profileAcceleration)
     // For time-based profiles, ensure that acceleration does not exceed half of the current profile velocity.
     uint32_t currentProfileVelocity = 0;
     error = readRegister(112, currentProfileVelocity, 4);
-    if (timeBased && error == 0 && currentProfileVelocity > 0 && profileAcceleration > (currentProfileVelocity / 2)) {
+    if (timeBased && error == 0 && currentProfileVelocity > 0 && profileAcceleration > (currentProfileVelocity / 2))
+    {
         uint32_t clampedValue = currentProfileVelocity / 2;
-        if (_debug) {
+        if (_debug)
+        {
             Serial.print("Profile acceleration clamped to half of current profile velocity: ");
             Serial.println(clampedValue);
         }
@@ -1061,7 +1152,10 @@ uint8_t DynamixelLL::setProfileAcceleration(uint32_t profileAcceleration)
         Serial.println(error);
     }
     
-    return writeRegister(108, profileAcceleration, 4); // RAM address 108, 4 bytes
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = profileAcceleration;
+    return writeRegister(108, buffer, 4); // RAM address 108, 4 bytes
 }
 
 
@@ -1080,8 +1174,10 @@ MovingStatus DynamixelLL::getMovingStatus()
     uint32_t temp = 0;
     // Read 1 byte from register 123 (stored in a 4-byte variable) from RAM.
     uint8_t error = readRegister(123, temp, 1);
-    if (error != 0) {
-        if (_debug) {
+    if (error != 0)
+    {
+        if (_debug)
+        {
             Serial.print("Error reading Moving Status, error code: ");
             Serial.println(error, HEX);
         }

@@ -81,6 +81,19 @@ public:
     void setDebug(bool enable);
 
     /**
+     * @brief Enables synchronization mode for multiple motors.
+     * Stores the motor IDs and the number of motors for synchronized operations.
+     * @param motorIDs an array of motor IDs.
+     * @param numMotors Number of motors in the array.
+     */
+    void enableSync(const uint8_t* motorIDs, uint8_t numMotors);
+
+    /**
+     * @brief Disables synchronization mode.
+     */
+    void disableSync();
+
+    /**
      * @brief Sets the operating mode of the servo.
      * 
      * Allowed: 1 = Velocity, 3 = Position, 4 = Extended Position, 16 = PWM.
@@ -90,11 +103,29 @@ public:
     uint8_t setOperatingMode(uint8_t mode);
 
     /**
+     * @brief Sets the operating mode for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param modes Array of desired modes for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setOperatingMode(const uint8_t (&modes)[N]);
+
+    /**
      * @brief Sets the actuator’s desired output position (pulses) for Position Control Mode.
      * @param goalPosition Desired position (0 to 4095 pulses).
      * @return uint8_t 0 on success.
      */
     uint8_t setGoalPosition(uint16_t goalPosition);
+
+    /**
+     * @brief Sets the actuator’s desired output position (pulses) for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param goalPositions Array of desired positions for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setGoalPosition(const uint16_t (&goalPositions)[N]);
 
     /**
      * @brief Sets the actuator’s desired output position (angle in degrees) for Position Control Mode.
@@ -104,11 +135,29 @@ public:
     uint8_t setGoalPosition(float angleDegrees);
 
     /**
+     * @brief Sets the actuator’s desired output position (angles) for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param angleDegrees Array of desired positions for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setGoalPosition(const float (&angleDegrees)[N]);
+
+    /**
      * @brief Sets the actuator’s desired output position (pulses) for Extended Position Control Mode.
      * @param extendedPosition Desired position (from -1,048,575 to +1,048,575 pulses).
      * @return uint8_t 0 on success.
      */
     uint8_t setGoalPosition(int32_t extendedPosition);
+
+    /**
+     * @brief Sets the actuator’s desired output position (pulses) for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param extendedPositions Array of desired positions for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setGoalPosition(int32_t (&extendedPositions)[N]);
 
     /**
      * @brief Enables or disables torque for the DYNAMIXEL’s internal motor.
@@ -119,11 +168,29 @@ public:
     uint8_t setTorqueEnable(bool enable);
 
     /**
+     * @brief Enables or disables torque for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param enable Array of torque states for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setTorqueEnable(const bool (&enable)[N]);
+
+    /**
      * @brief Turns the servo LED on or off.
      * @param enable True to turn on.
      * @return uint8_t 0 on success.
      */
     uint8_t setLED(bool enable);
+    
+    /**
+     * @brief Turns the servo LED on or off for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param enable Array of LED states for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setLED(const bool (&enable)[N]);
 
     /**
      * @brief Set the DYNAMIXEL’s response policy to define which instructions will generate a status packet.
@@ -139,11 +206,29 @@ public:
     uint8_t setStatusReturnLevel(uint8_t level);
 
     /**
+     * @brief Sets the return level for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param levels Array of return levels for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setStatusReturnLevel(const uint8_t (&levels)[N]);
+
+    /**
      * @brief Sets the servo's new unique ID. 254 (0xFE) reserved for use as the Broadcast ID.
      * @param newID New servo ID (0-253).
      * @return uint8_t 0 on success.
      */
     uint8_t setID(uint8_t newID);
+
+    /**
+     * @brief Sets the servo's new unique ID for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param newIDs Array of new IDs for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setID(const uint8_t (&newIDs)[N]);
 
     /**
      * @brief Sets the baud rate.
@@ -157,11 +242,29 @@ public:
     uint8_t setBaudRate(uint8_t baudRate);
 
     /**
+     * @brief Sets the baud rate for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param baudRates Array of baud rate codes for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setBaudRate(const uint8_t (&baudRates)[N]);
+
+    /**
      * @brief Sets the delay time after which a Status Packet response will be returned.
      * @param delayTime Delay time in 2 µsec units, valid range: 0 - 254 (0-508 μsec).
      * @return uint8_t 0 on success.
      */
     uint8_t setReturnDelayTime(uint8_t delayTime);
+
+    /**
+     * @brief Sets the delay time for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param delayTime Array of delay times for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setReturnDelayTime(const uint8_t (&delayTime)[N]);
 
     /**
      * @brief Configures the drive mode of the servo.
@@ -180,15 +283,17 @@ public:
     uint8_t setDriveMode(bool torqueOnByGoalUpdate, bool timeBasedProfile, bool reverseMode);
 
     /**
-     * @brief Sets the Profile Acceleration.
-     * 
-     * Configures the motion profile’s acceleration (or allowed acceleration time).
-     * In time-based mode, the value is further limited to not exceed 50% of the current Profile Velocity.
-     *
-     * @param profileAcceleration Desired profile acceleration.
+     * @brief Sets the Drive Mode for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param torqueOnByGoalUpdate Array of torque on by goal update flags for each motor.
+     * @param timeBasedProfile Array of time-based profile flags for each motor.
+     * @param reverseMode Array of reverse mode flags for each motor.
      * @return uint8_t 0 on success, nonzero on error.
      */
-    uint8_t setProfileAcceleration(uint32_t profileAcceleration);
+    template <uint8_t N>
+    uint8_t setDriveMode(const bool (&torqueOnByGoalUpdate)[N],
+                         const bool (&timeBasedProfile)[N],
+                         const bool (&reverseMode)[N]);
 
     /**
      * @brief Sets the Profile Velocity.
@@ -203,11 +308,49 @@ public:
     uint8_t setProfileVelocity(uint32_t profileVelocity);
 
     /**
+     * @brief Sets the Profile Velocity for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param profileVelocity Array of profile velocities for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setProfileVelocity(const uint32_t (&profileVelocity)[N]);
+
+    /**
+     * @brief Sets the Profile Acceleration.
+     * 
+     * Configures the motion profile’s acceleration (or allowed acceleration time).
+     * In time-based mode, the value is further limited to not exceed 50% of the current Profile Velocity.
+     *
+     * @param profileAcceleration Desired profile acceleration.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    uint8_t setProfileAcceleration(uint32_t profileAcceleration);
+
+    /**
+     * @brief Sets the Profile Acceleration for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param profileAcceleration Array of profile accelerations for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setProfileAcceleration(const uint32_t (&profileAcceleration)[N]);
+
+    /**
      * @brief Retrieves the current present position.
      * @param presentPosition Reference to store the 4-byte position.
      * @return uint8_t 0 on success.
      */
     uint8_t getPresentPosition(uint32_t &presentPosition);
+
+    /**
+     * @brief Retrieves the current present position for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param presentPosition Array to store the present positions for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t getPresentPosition(uint32_t (&presentPositions)[N]);
 
     /**
      * @brief Gets the moving status of the servo.
@@ -223,32 +366,14 @@ public:
      */
     uint8_t ping(uint32_t &value);
 
-
-    /**
-     * @brief Performs a synchronous write to multiple devices.
-     * @param address Starting register address.
-     * @param dataLength Number of bytes to write per device.
-     * @param ids Array of device IDs.
-     * @param values Array of 32-bit values (only lower bytes used as specified).
-     * @param count Number of devices.
-     * @return bool True if the packet was sent successfully.
-     */
-    bool syncWrite(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count);
-
-    /**
-     * @brief Performs a synchronous read from multiple devices.
-     * @param address Starting register address.
-     * @param dataLength Number of bytes to read per device.
-     * @param ids Array of device IDs.
-     * @param values Array to store 32-bit output values.
-     * @param count Number of devices.
-     * @return uint8_t 0 if all responses are received successfully.
-     */
-    uint8_t syncRead(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count);
-
 private:
     HardwareSerial &_serial; ///< Reference to the serial interface.
     uint8_t _servoID;        ///< Servo ID.
+
+    bool _sync = false;      ///< Virtual broadcaster motor flag.
+    uint8_t _numMotors = 1;  ///< Virtual broadcaster number of motors.
+    uint8_t* _motorIDs;      ///< Virtual broadcaster motor IDs.
+
     bool _debug = false;     ///< Debug mode flag.
     uint8_t _error;          ///< Last error code.
 
@@ -276,7 +401,7 @@ private:
      * @param sizeResponse (Optional) Expected response length.
      * @return uint8_t 0 on success.
      */
-    uint8_t writeRegister(uint16_t address, uint32_t value, uint8_t size, uint8_t sizeResponse = 11);
+    uint8_t writeRegister(uint16_t address, uint32_t* value, uint8_t size, uint8_t sizeResponse = 11);
 
     /**
      * @brief Reads a register from the servo.
@@ -286,6 +411,28 @@ private:
      * @return uint8_t 0 on success.
      */
     uint8_t readRegister(uint16_t address, uint32_t &value, uint8_t size);
+
+    /**
+     * @brief Performs a synchronous write to multiple devices.
+     * @param address Starting register address.
+     * @param dataLength Number of bytes to write per device.
+     * @param ids Array of device IDs.
+     * @param values Array of 32-bit values (only lower bytes used as specified).
+     * @param count Number of devices.
+     * @return bool True if the packet was sent successfully.
+     */
+    bool syncWrite(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count);
+
+    /**
+     * @brief Performs a synchronous read from multiple devices.
+     * @param address Starting register address.
+     * @param dataLength Number of bytes to read per device.
+     * @param ids Array of device IDs.
+     * @param values Array to store 32-bit output values.
+     * @param count Number of devices.
+     * @return uint8_t 0 if all responses are received successfully.
+     */
+    uint8_t syncRead(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count);
 
     /**
      * @brief Performs a bulk write to multiple devices.
@@ -361,4 +508,6 @@ private:
     bool sendRawPacket(const uint8_t* packet, uint16_t length);
 };
 
+// Include the template definitions.
+#include "Dynamixel_ll.tpp"
 #endif

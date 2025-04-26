@@ -4,17 +4,17 @@
 DynamixelLL dxl(Serial2, 0); 
 
 // Motor IDs for the two motors.
-const uint8_t motorIDs[] = {4, 5};
+const uint8_t motorIDs[] = {10, 11};
 const uint8_t numMotors = sizeof(motorIDs) / sizeof(motorIDs[0]);
 
 // Arrays for positions, statuses, and LED settings.
-uint32_t positions[numMotors];
+uint16_t positions[numMotors];
 uint32_t getpositions[numMotors];
-uint32_t setLED[numMotors];
+bool setLED[numMotors];
 
 // Create individual motor objects for setup (if needed for individual writes).
-DynamixelLL motor1(Serial2, 4);
-DynamixelLL motor2(Serial2, 5);
+DynamixelLL motor1(Serial2, motorIDs[0]);
+DynamixelLL motor2(Serial2, motorIDs[1]);
 
 void setup() {
   Serial.begin(115200);
@@ -28,13 +28,23 @@ void setup() {
   getpositions[0] = 0;
   getpositions[1] = 0;
 
+  // Enable sync mode for multiple motor control.
+  dxl.enableSync(motorIDs, numMotors);
+
   // Configure Drive Mode for each motor:
-  motor1.setDriveMode(true, false, false);
-  motor2.setDriveMode(true, false, false);
+  motor1.setDriveMode(false, false, true);
+  motor2.setDriveMode(false, false, false);
+
+  // Set Operating Mode for each motor:
+  dxl.setOperatingMode(3);
+
+  // Enable torque for both motors.
+  dxl.setTorqueEnable(true);
 
   // Enable or disable debug mode for troubleshooting
   motor1.setDebug(true);
   motor2.setDebug(true);
+  dxl.setDebug(true);
 
   // Set Profile Velocity and Profile Acceleration for smooth motion.
   motor1.setProfileVelocity(400);
@@ -55,13 +65,13 @@ void loop() {
   setLED[1] = 1;
   
   // Sync write Goal Position (register 116, 4 bytes) and LED (register 65, 1 byte) for all motors.
-  dxl.syncWrite(116, 4, motorIDs, positions, numMotors);
-  dxl.syncWrite(65, 1, motorIDs, setLED, numMotors);
+  dxl.setGoalPosition(positions);
+  dxl.setLED(setLED);
   Serial.println("\nInitial Position sent to motors\n");
   delay(3000);
 
   // Read and show present position from the both motors.
-  dxl.syncRead(132, 4, motorIDs, getpositions, numMotors);
+  dxl.getPresentPosition(getpositions);
   Serial.print("Initial Position of the first motor: ");
   Serial.println(getpositions[0]);
   Serial.print("Initial Position of the second motor: ");
@@ -72,12 +82,13 @@ void loop() {
   positions[1] = 4095;
   setLED[0] = 1;
   setLED[1] = 0;
-  dxl.syncWrite(116, 4, motorIDs, positions, numMotors);
-  dxl.syncWrite(65, 1, motorIDs, setLED, numMotors);
+  dxl.setGoalPosition(positions);
+  dxl.setLED(setLED);
+
   Serial.println("\nFinal Position sent to motors");
   delay(3000);
 
-  dxl.syncRead(132, 4, motorIDs, getpositions, numMotors);
+  dxl.getPresentPosition(getpositions);
   Serial.print("Final Position of the first motor: ");
   Serial.println(getpositions[0]);
   Serial.print("Final Position of the second motor: ");
