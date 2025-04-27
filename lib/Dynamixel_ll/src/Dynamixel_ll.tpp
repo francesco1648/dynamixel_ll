@@ -25,6 +25,36 @@ uint8_t DynamixelLL::setOperatingMode(const uint8_t (&modes)[N])
 
 
 template <uint8_t N>
+uint8_t DynamixelLL::setHomingOffset(const float (&offsetAngle)[N])
+{
+    // Check if array size N matches the expected number of motors
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
+
+    int32_t offsetPulse[_numMotors];
+    uint32_t offsetArray[_numMotors];
+    for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
+    {
+        // Convert angle in degrees to pulses using conversion factor 0.088 [deg/pulse].
+        offsetPulse[i] = static_cast<int32_t>(offsetAngle[i] / 0.088);
+        if (offsetPulse[i] > 1044479)
+        {
+            offsetPulse[i] = 1044479;
+            if (_debug)
+                Serial.println("Warning: Homing offset clamped to 1044479.");
+        } else if (offsetPulse[i] < -1044479) {
+            offsetPulse[i] = -1044479;
+            if (_debug)
+                Serial.println("Warning: Homing offset clamped to -1044479.");
+        }
+        // Convert to uint32_t for writing to register.
+        offsetArray[i] = static_cast<uint32_t>(offsetPulse[i]);
+    }
+    return writeRegister(20, offsetArray, 4); // RAM address 20, 4 bytes
+}
+
+
+template <uint8_t N>
 uint8_t DynamixelLL::setGoalPosition(const uint16_t (&goalPositions)[N])
 {
     // Check if array size N matches the expected number of motors

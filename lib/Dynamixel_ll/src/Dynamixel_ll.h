@@ -112,6 +112,25 @@ public:
     uint8_t setOperatingMode(const uint8_t (&modes)[N]);
 
     /**
+     * @brief Sets actuator’s home position.
+     * 
+     * The offset is in degrees and is converted to pulses internally.
+     * 
+     * @param offsetAngle Desired home position in degrees.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    uint8_t setHomingOffset(const float &offsetAngle);
+
+    /**
+     * @brief Sets actuator’s home position for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param offsetAngle Array of home positions in degrees for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setHomingOffset(const float (&offsetAngle)[N]);
+
+    /**
      * @brief Sets the actuator’s desired output position (pulses) for Position Control Mode.
      * @param goalPosition Desired position (0 to 4095 pulses).
      * @return uint8_t 0 on success.

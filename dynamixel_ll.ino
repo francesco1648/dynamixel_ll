@@ -8,6 +8,7 @@ const uint8_t motorIDs[] = {10, 11};
 const uint8_t numMotors = sizeof(motorIDs) / sizeof(motorIDs[0]);
 
 // Arrays for positions, statuses, and LED settings.
+float homingOffset[numMotors];
 uint16_t positions[numMotors];
 uint32_t getpositions[numMotors];
 bool setLED[numMotors];
@@ -25,6 +26,8 @@ void setup() {
   dxl.begin(57600);
 
   // Initialize a known present position for troubleshooting.
+  homingOffset[0] = -10.0f;
+  homingOffset[1] = 60.0f;
   getpositions[0] = 0;
   getpositions[1] = 0;
 
@@ -37,6 +40,9 @@ void setup() {
 
   // Set Operating Mode for each motor:
   dxl.setOperatingMode(3);
+
+  // Set Homing Offset for each motor:
+  dxl.setHomingOffset(homingOffset);
 
   // Enable torque for both motors.
   dxl.setTorqueEnable(true);
