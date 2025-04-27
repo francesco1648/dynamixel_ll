@@ -338,7 +338,7 @@ public:
 
     /**
      * @brief Retrieves the current present position.
-     * @param presentPosition Reference to store the 4-byte position.
+     * @param presentPosition Reference to store the 4-byte position (from -2,147,483,648 to 2,147,483,647).
      * @return uint8_t 0 on success.
      */
     uint8_t getPresentPosition(uint32_t &presentPosition);
@@ -506,6 +506,13 @@ private:
      * @return bool True if sent successfully.
      */
     bool sendRawPacket(const uint8_t* packet, uint16_t length);
+
+    /**
+     * @brief A helper function for template overloads. Checks the size of an array.
+     * @param arraySize Size of the array to check.
+     * @return uint8_t 0 if valid, nonzero if invalid.
+     */
+    uint8_t checkArraySize(uint8_t arraySize) const;
 };
 
 // Include the template definitions.

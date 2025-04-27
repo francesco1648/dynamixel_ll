@@ -150,6 +150,17 @@ void DynamixelLL::disableSync()
 }
 
 
+uint8_t DynamixelLL::checkArraySize(uint8_t arraySize) const {
+    if (arraySize != _numMotors) {
+        if (_debug) {
+            Serial.println("Error: Array size does not match number of motors.");
+        }
+        return 1; // Error code for size mismatch
+    }
+    return 0; // No error
+}
+
+
 // ===============================
 // ==   Instruction Functions   ==
 // ===============================

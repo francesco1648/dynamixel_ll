@@ -5,12 +5,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setOperatingMode(const uint8_t (&modes)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedModes[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -32,12 +28,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setGoalPosition(const uint16_t (&goalPositions)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedPositions[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -60,12 +52,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setGoalPosition(const float (&angleDegrees)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedPositions[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -86,12 +74,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setGoalPosition(int32_t (&extendedPositions)[N])
 {
     // Check if N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedPositions[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -118,12 +102,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setTorqueEnable(const bool (&enable)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedValues[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -136,12 +116,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setLED(const bool (&enable)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedValues[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -154,12 +130,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setStatusReturnLevel(const uint8_t (&levels)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedLevels[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -181,12 +153,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setID(const uint8_t (&newIDs)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedIDs[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -208,12 +176,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setBaudRate(const uint8_t (&baudRates)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedBaudRates[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -251,12 +215,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setReturnDelayTime(const uint8_t (&delayTime)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedDelayTime[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -280,12 +240,8 @@ uint8_t DynamixelLL::setDriveMode(const bool (&torqueOnByGoalUpdate)[N],
                                   const bool (&reverseMode)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedDriveModes[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -307,12 +263,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setProfileVelocity(const uint32_t (&profileVelocity)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedProfileVelocity[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -347,12 +299,8 @@ template <uint8_t N>
 uint8_t DynamixelLL::setProfileAcceleration(const uint32_t (&profileAcceleration)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
 
     uint32_t processedProfileAcceleration[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -405,11 +353,7 @@ template <uint8_t N>
 uint8_t DynamixelLL::getPresentPosition(uint32_t (&presentPositions)[N])
 {
     // Check if array size N matches the expected number of motors
-    if (N != _numMotors)
-    {
-        if (_debug)
-            Serial.println("Error: Array size does not match number of motors.");
-        return 1;
-    }
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
     return syncRead(132, 4, _motorIDs, presentPositions, _numMotors); // RAM address 132, 4 bytes
 }
