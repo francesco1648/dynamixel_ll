@@ -121,7 +121,7 @@ uint8_t DynamixelLL::setGoalPosition(int32_t (&extendedPositions)[N])
             if (_debug)
                 Serial.println("Warning: Extended position clamped to -1048575.");
         }
-        // Use two's complement representation.
+        // Convert to uint32_t for writing to register.
         processedPositions[i] = static_cast<uint32_t>(extendedPositions[i]);
     }
     return writeRegister(116, processedPositions, 4); // RAM address 116, 4 bytes

@@ -987,7 +987,7 @@ uint8_t DynamixelLL::setGoalPosition(int32_t extendedPosition)
 
     uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
     for(uint8_t i = 0; i < _numMotors; i++)
-        buffer[i] = static_cast<uint32_t>(extendedPosition); // Use two's complement representation.
+        buffer[i] = static_cast<uint32_t>(extendedPosition); // Convert to uint32_t for writing to register.
     return writeRegister(116, buffer, 4); // RAM address 116, 4 bytes
 }
 
