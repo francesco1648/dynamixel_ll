@@ -119,7 +119,7 @@ public:
      * @param offsetAngle Desired home position in degrees.
      * @return uint8_t 0 on success, nonzero on error.
      */
-    uint8_t setHomingOffset(const float &offsetAngle);
+    uint8_t setHomingOffset(float offsetAngle);
 
     /**
      * @brief Sets actuator’s home position for multiple motors.
@@ -401,7 +401,7 @@ private:
      * @param expectedParams Expected parameter byte count.
      * @return StatusPacket The received packet.
      */
-    StatusPacket receivePacket(uint8_t expectedParams);
+    StatusPacket receivePacket();
 
     /**
      * @brief Calculates the 16-bit CRC checksum.

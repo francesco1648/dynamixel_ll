@@ -220,7 +220,7 @@ uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t* value, uint8_t si
     delay(time_delay); // Allow time for the servo to process the command.
 
     // Receive and Process the Response
-    StatusPacket response = receivePacket(sizeResponse);
+    StatusPacket response = receivePacket();
     if (!response.valid || response.error != 0)
     {
         if (_debug)
@@ -273,7 +273,7 @@ uint8_t DynamixelLL::readRegister(uint16_t address, uint32_t &value, uint8_t siz
     delay(time_delay);
     
     // Receive and process the response.
-    StatusPacket response = receivePacket(size);
+    StatusPacket response = receivePacket();
     if (!response.valid || response.error != 0)
     {
         if (_debug)
@@ -317,7 +317,7 @@ void DynamixelLL::sendPacket(const uint8_t *packet, uint8_t length)
 
 
 
-StatusPacket DynamixelLL::receivePacket(uint8_t expectedParams)
+StatusPacket DynamixelLL::receivePacket()
 {
     StatusPacket result = {false, 0, {0}, 0};
 
@@ -462,7 +462,7 @@ uint8_t DynamixelLL::ping(uint32_t &value)
     delay(time_delay); // Allow the servo time to process and respond.
 
     // Receive the status packet in response (expecting a standard status packet).
-    StatusPacket response = receivePacket(14); // Params = 3 (Model Number (little-endian) + Version of Firmware)
+    StatusPacket response = receivePacket(); // Params = 3 (Model Number (little-endian) + Version of Firmware)
 
     // Extract returned parameter data into a 32-bit value (constructed in little-endian order).
     value = 0;
@@ -504,9 +504,8 @@ bool DynamixelLL::syncWrite(uint16_t address, uint8_t dataLength, const uint8_t*
         // Add device ID.
         params[idx++] = ids[i];
         // Add the data bytes in little-endian order.
-        uint32_t val = values[i];
         for (uint8_t j = 0; j < dataLength; j++)
-            params[idx++] = (val >> (8 * j)) & 0xFF;
+            params[idx++] = (values[i] >> (8 * j)) & 0xFF;
     }
 
     // With the complete parameter block built, send the full sync write packet.
@@ -671,7 +670,7 @@ uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_
     // For each device, read its response.
     for (uint8_t i = 0; i < count; i++)
     {
-        StatusPacket response = receivePacket(dataLength);
+        StatusPacket response = receivePacket();
         if (!response.valid || response.error != 0)
         {
             if (_debug)
@@ -684,10 +683,9 @@ uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_
             retError = response.error;
         }
         // Convert the little-endian data bytes into a 32-bit value.
-        uint32_t value = 0;
+        values[i] = 0;
         for (uint8_t j = 0; j < response.dataLength; j++)
-            value |= (response.data[j] << (8 * j));
-        values[i] = value;
+            values[i] |= (response.data[j] << (8 * j));
     }
 
     return retError;
@@ -718,9 +716,8 @@ bool DynamixelLL::bulkWrite(const uint8_t* ids, uint16_t* addresses, uint8_t* da
         params[idx++] = dataLengths[i] & 0xFF;
         params[idx++] = (dataLengths[i] >> 8) & 0xFF;
         // Add the data bytes in little-endian order.
-        uint32_t val = values[i];
         for (uint8_t j = 0; j < dataLengths[i]; j++)
-            params[idx++] = (val >> (8 * j)) & 0xFF;
+            params[idx++] = (values[i] >> (8 * j)) & 0xFF;
     }
 
     // With the complete parameter block built, send the full bulk write packet.
@@ -868,7 +865,7 @@ uint8_t DynamixelLL::bulkRead(const uint8_t* ids, uint16_t* addresses, uint8_t* 
     // For each device, read its response.
     for (uint8_t i = 0; i < count; i++)
     {
-        StatusPacket response = receivePacket(dataLengths[i]);
+        StatusPacket response = receivePacket();
         if (!response.valid || response.error != 0)
         {
             if (_debug)
@@ -881,10 +878,9 @@ uint8_t DynamixelLL::bulkRead(const uint8_t* ids, uint16_t* addresses, uint8_t* 
             retError = response.error;
         }
         // Convert the little-endian data bytes into a 32-bit value.
-        uint32_t value = 0;
+        values[i] = 0;
         for (uint8_t j = 0; j < response.dataLength; j++)
-            value |= (response.data[j] << (8 * j));
-        values[i] = value;
+            values[i] |= (response.data[j] << (8 * j));
     }
     
     return retError;
@@ -913,7 +909,7 @@ uint8_t DynamixelLL::setOperatingMode(uint8_t mode)
 }
 
 
-uint8_t DynamixelLL::setHomingOffset(const float &offsetAngle)
+uint8_t DynamixelLL::setHomingOffset(float offsetAngle)
 {
     // Convert angle in degrees to pulses using conversion factor 0.088 [deg/pulse].
     uint32_t offset = offsetAngle / 0.088;
@@ -994,22 +990,18 @@ uint8_t DynamixelLL::setGoalPosition(int32_t extendedPosition)
 
 uint8_t DynamixelLL::setTorqueEnable(bool enable)
 {
-    uint8_t value = enable ? 1 : 0;
-
     uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
     for(uint8_t i = 0; i < _numMotors; i++)
-        buffer[i] = value;
+        buffer[i] = enable ? 1 : 0;
     return writeRegister(64, buffer, 1); // RAM address 64, 1 byte
 }
 
 
 uint8_t DynamixelLL::setLED(bool enable)
 {
-    uint8_t value = enable ? 1 : 0;
-
     uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
     for(uint8_t i = 0; i < _numMotors; i++)
-        buffer[i] = value;
+        buffer[i] = enable ? 1 : 0;
     return writeRegister(65, buffer, 1); // RAM address 65, 1 byte
 }
 
