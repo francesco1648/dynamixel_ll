@@ -58,6 +58,8 @@ public:
      */
     DynamixelLL(HardwareSerial &serial, uint8_t servoID);
 
+    ~DynamixelLL();
+
     /**
      * @brief Initializes the Dynamixel interface.
      * @param baudrate The baud rate (default is 57600).
@@ -386,12 +388,12 @@ public:
     uint8_t ping(uint32_t &value);
 
 private:
-    HardwareSerial &_serial; ///< Reference to the serial interface.
-    uint8_t _servoID;        ///< Servo ID.
+    HardwareSerial &_serial;        ///< Reference to the serial interface.
+    uint8_t _servoID;               ///< Servo ID.
 
-    bool _sync = false;      ///< Virtual broadcaster motor flag.
-    uint8_t _numMotors = 1;  ///< Virtual broadcaster number of motors.
-    uint8_t* _motorIDs;      ///< Virtual broadcaster motor IDs.
+    bool _sync = false;             ///< Virtual broadcaster motor flag.
+    uint8_t _numMotors = 1;         ///< Virtual broadcaster number of motors.
+    uint8_t* _motorIDs = nullptr;   ///< Virtual broadcaster motor IDs.
 
     bool _debug = false;     ///< Debug mode flag.
     uint8_t _error;          ///< Last error code.

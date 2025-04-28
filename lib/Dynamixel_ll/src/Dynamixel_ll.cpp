@@ -3,6 +3,16 @@
 DynamixelLL::DynamixelLL(HardwareSerial &serial, uint8_t servoID)
     : _serial(serial), _servoID(servoID) {}
 
+DynamixelLL::~DynamixelLL()
+{
+    // Deallocate memory for motor IDs if they were allocated
+    if (_motorIDs != nullptr)
+    {
+        delete[] _motorIDs;
+        _motorIDs = nullptr;
+    }
+}
+
 void DynamixelLL::begin(long baudrate)
 {
     _serial.begin(baudrate);
