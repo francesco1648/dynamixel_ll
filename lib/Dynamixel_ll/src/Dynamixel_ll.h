@@ -60,6 +60,8 @@ public:
 
     ~DynamixelLL();
 
+    DynamixelLL(const DynamixelLL &other) = delete;
+
     /**
      * @brief Initializes the Dynamixel interface.
      * @param baudrate The baud rate (default is 57600).
