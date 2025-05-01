@@ -6,6 +6,7 @@
         "xhash": "cpp",
         "xstring": "cpp",
         "xutility": "cpp",
-        "dynamixel_ll.h": "c"
+        "dynamixel_ll.h": "c",
+        "*.tpp": "cpp"
     }
 }

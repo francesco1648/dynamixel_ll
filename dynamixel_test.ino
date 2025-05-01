@@ -9,10 +9,11 @@ const uint8_t numMotors = sizeof(motorIDs) / sizeof(motorIDs[0]);
 
 // Arrays for positions, statuses, and LED settings.
 uint16_t positions[numMotors];
-uint32_t getpositions[numMotors];
+uint32_t getpositions[2];
+
 uint32_t setLED[numMotors];
-
-
+ #define ProfileAcceleration 30000
+  #define ProfileVelocity 20000
 
 
 
@@ -30,10 +31,10 @@ uint32_t pos_mot_2 = 2017; // Posizione iniziale del motore 3
 uint32_t pos_mot_3 = 1995; // Posizione iniziale del motore 4
 uint32_t pos_mot_4 = 1066; // Posizione iniziale del motore 5
 uint32_t pos_mot_5 = 2025; // Posizione iniziale del motore 6
-uint32_t pos_mot_6 = 0;
+uint32_t pos_mot_6 = 200;
 
-int step = 50;  // Incremento/decremento per ogni pressione del tasto
-
+int step = 5;  // Incremento/decremento per ogni pressione del tasto
+int step2 = 45; // Incremento/decremento per i motori 3, 4, 5, 6
 void setup() {
 
   Serial.begin(115200);
@@ -68,20 +69,20 @@ mot_Right_1.setTorqueEnable(false); // Disable torque for safety
 
 
 // Set Profile Velocity and Profile Acceleration for smooth motion.
-mot_Left_1.setProfileVelocity(400);
-mot_Left_1.setProfileAcceleration(20);
-mot_Right_1.setProfileVelocity(200);
-mot_Right_1.setProfileAcceleration(10);
-mot_2.setProfileVelocity(200);
-mot_2.setProfileAcceleration(10);
-mot_3.setProfileVelocity(200);
-mot_3.setProfileAcceleration(10);
-mot_4.setProfileVelocity(200);
-mot_4.setProfileAcceleration(10);
-mot_5.setProfileVelocity(200);
-mot_5.setProfileAcceleration(10);
-mot_6.setProfileVelocity(200);
-mot_6.setProfileAcceleration(10);
+mot_Left_1.setProfileVelocity(ProfileVelocity);
+mot_Left_1.setProfileAcceleration(ProfileAcceleration);
+mot_Right_1.setProfileVelocity(ProfileVelocity);
+mot_Right_1.setProfileAcceleration(ProfileAcceleration);
+mot_2.setProfileVelocity(ProfileVelocity);
+mot_2.setProfileAcceleration(ProfileAcceleration);
+mot_3.setProfileVelocity(ProfileVelocity);
+mot_3.setProfileAcceleration(ProfileAcceleration);
+mot_4.setProfileVelocity(ProfileVelocity);
+mot_4.setProfileAcceleration(ProfileAcceleration);
+mot_5.setProfileVelocity(ProfileVelocity);
+mot_5.setProfileAcceleration(ProfileAcceleration);
+mot_6.setProfileVelocity(ProfileVelocity);
+mot_6.setProfileAcceleration(ProfileAcceleration);
 
   // Configure Drive Mode for each motor:
   mot_Left_1.setDriveMode(false, false, false);
@@ -121,6 +122,21 @@ mot_3.getPresentPosition(pos_mot_3);
 mot_4.getPresentPosition(pos_mot_4);
 mot_5.getPresentPosition(pos_mot_5);
 mot_6.getPresentPosition(pos_mot_6);
+Serial.print("getpositions[0]");
+Serial.println(getpositions[0]);
+Serial.print("getpositions[1]");
+Serial.println(getpositions[1]);
+Serial.print("pos_mot_2 ");
+Serial.println(pos_mot_2);
+Serial.print("pos_mot_3 ");
+Serial.println(pos_mot_3);
+Serial.print("pos_mot_4 ");
+Serial.println(pos_mot_4);
+Serial.print("pos_mot_5 ");
+Serial.println(pos_mot_5);
+Serial.print("pos_mot_6 ");
+Serial.println(pos_mot_6);
+
 delay(10);
 Serial.print("\nThe motors are initialised.");
 
@@ -136,11 +152,10 @@ void loop() {
        {
        case 'w': // W -> Motore 1 avanti
        case 'W':
-        pos_mot_Left_1 -= step; // Incrementa la posizione del motore 1
-        pos_mot_Right_1 += step; // Incrementa la posizione del motore 2
-        positions[0] = pos_mot_Left_1; // Set the position for motor 1
-        positions[1] = pos_mot_Right_1; // Set the position for motor 2
-        dxl.setGoalPosition_PCM(positions);
+
+        getpositions[0] += step;; // Set the position for motor 1
+        getpositions[1] -= step; // Set the position for motor 2
+        dxl.setGoalPosition_PCM((uint16_t[2]){(uint16_t)getpositions[0], (uint16_t)getpositions[1]});
          Serial.print("mot_Left_1 ");
          Serial.print(pos_mot_Left_1);
          Serial.print("\t");
@@ -150,11 +165,10 @@ void loop() {
 
        case 's': // S -> Motore 1 indietro
        case 'S':
-pos_mot_Left_1 += step; // Decrementa la posizione del motore 1
-pos_mot_Right_1 -= step; // Decrementa la posizione del motore 2
 
-  mot_Left_1.setGoalPosition_PCM(pos_mot_Left_1);  // Address 65, Value 1, Size 1 byte
-  mot_Right_1.setGoalPosition_PCM( pos_mot_Right_1);  // Address 65, Value 1, Size 1 byte
+       getpositions[0] -= step;; // Set the position for motor 1
+       getpositions[1] += step; // Set the position for motor 2
+       dxl.setGoalPosition_PCM((uint16_t[2]){(uint16_t)getpositions[0], (uint16_t)getpositions[1]});
        Serial.print("pos_mot_Left_1 ");
          Serial.print(pos_mot_Left_1);
          Serial.print("\t");
@@ -164,10 +178,10 @@ pos_mot_Right_1 -= step; // Decrementa la posizione del motore 2
 
        case 'd': // D -> Motore 2 avanti
        case 'D':
-       pos_mot_Left_1 -= step;
-       pos_mot_Right_1 -= step;
-       mot_Left_1.setGoalPosition_PCM( pos_mot_Left_1);
-       mot_Right_1.setGoalPosition_PCM( pos_mot_Right_1);
+
+       getpositions[0] -= step;; // Set the position for motor 1
+       getpositions[1] -= step; // Set the position for motor 2
+       dxl.setGoalPosition_PCM((uint16_t[2]){(uint16_t)getpositions[0], (uint16_t)getpositions[1]});
          Serial.print("pos_mot_Left_1 ");
          Serial.print(pos_mot_Left_1);
          Serial.print("\t");
@@ -177,11 +191,10 @@ pos_mot_Right_1 -= step; // Decrementa la posizione del motore 2
 
        case 'a': // A -> Motore 2 indietro
        case 'A':
-       pos_mot_2 += step;
-       pos_mot_Right_1 += step;
 
-       mot_Left_1.setGoalPosition_PCM( pos_mot_Left_1);
-       mot_Right_1.setGoalPosition_PCM( pos_mot_Right_1);
+       getpositions[0] += step;; // Set the position for motor 1
+       getpositions[1] += step; // Set the position for motor 2
+       dxl.setGoalPosition_PCM((uint16_t[2]){(uint16_t)getpositions[0], (uint16_t)getpositions[1]});
        Serial.print("pos_mot_Left_1 ");
          Serial.print(pos_mot_Left_1);
          Serial.print("\t");
@@ -200,45 +213,45 @@ pos_mot_Right_1 -= step; // Decrementa la posizione del motore 2
         break;
         case 'u':
         case 'U':
-        pos_mot_3 += step; // Incrementa la posizione del motore 4
+        pos_mot_3 += step2; // Incrementa la posizione del motore 4
         mot_3.setGoalPosition_PCM( pos_mot_3);  // Address 65, Value 1, Size 1 byte
         break;
         case 'j':
         case 'J':
-        pos_mot_3 -= step; // Decrementa la posizione del motore 4
+        pos_mot_3 -= step2; // Decrementa la posizione del motore 4
         mot_3.setGoalPosition_PCM( pos_mot_3);  // Address 65, Value 1, Size 1 byte
         break;
         case 'i':
         case 'I':
-        pos_mot_4 += step; // Incrementa la posizione del motore 5
+        pos_mot_4 -= step2; // Incrementa la posizione del motore 5
         mot_4.setGoalPosition_PCM( pos_mot_4);  // Address 65, Value 1, Size 1 byte
         break;
         case 'k':
         case 'K':
-        pos_mot_4 -= step; // Decrementa la posizione del motore 5
+        pos_mot_4 += step2; // Decrementa la posizione del motore 5
         mot_4.setGoalPosition_PCM( pos_mot_4);  // Address 65, Value 1, Size 1 byte
         break;
         case 'o':
         case 'O':
-        pos_mot_5 += step; // Incrementa la posizione del motore 6
+        pos_mot_5 += step2; // Incrementa la posizione del motore 6
         mot_5.setGoalPosition_PCM( pos_mot_5);  // Address 65, Value 1, Size 1 byte
         break;
         case 'l':
         case 'L':
-        pos_mot_5 -= step; // Decrementa la posizione del motore 6
+        pos_mot_5 -= step2; // Decrementa la posizione del motore 6
         mot_5.setGoalPosition_PCM( pos_mot_5);  // Address 65, Value 1, Size 1 byte
         break;
         case 'x':
         case 'X':
-        pos_mot_6 +=step;
+        pos_mot_6 +=step2;
         mot_6.setGoalPosition_PCM(pos_mot_6);
         break;
         case 'z':
         case 'Z':
-        pos_mot_6 -= step; // Decrementa la posizione del motore 6
+        pos_mot_6 -= step2; // Decrementa la posizione del motore 6
         mot_6.setGoalPosition_PCM(pos_mot_6);  // Address 65, Value 1, Size 1 byte
         break;
-        
+
 
 
        default:
