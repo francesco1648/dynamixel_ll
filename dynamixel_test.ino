@@ -33,7 +33,7 @@ uint32_t pos_mot_4 = 1066; // Posizione iniziale del motore 5
 uint32_t pos_mot_5 = 2025; // Posizione iniziale del motore 6
 uint32_t pos_mot_6 = 200;
 
-int step = 5;  // Incremento/decremento per ogni pressione del tasto
+int step = 15;  // Incremento/decremento per ogni pressione del tasto
 int step2 = 45; // Incremento/decremento per i motori 3, 4, 5, 6
 void setup() {
 
