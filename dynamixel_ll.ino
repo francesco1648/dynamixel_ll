@@ -25,8 +25,7 @@ DynamixelLL mot_3(Serial2, 113);  // ID = 4
 DynamixelLL mot_4(Serial2, 214);  // ID = 5
 DynamixelLL mot_5(Serial2, 215);  // ID = 6
 DynamixelLL mot_6(Serial2, 216);
-uint32_t pos_mot_Left_1 = 2920; // Posizione iniziale del motore 1
-uint32_t pos_mot_Right_1 = 1364; // Posizione iniziale del motore 2
+
 uint32_t pos_mot_2 = 2017; // Posizione iniziale del motore 3
 uint32_t pos_mot_3 = 1995; // Posizione iniziale del motore 4
 uint32_t pos_mot_4 = 1066; // Posizione iniziale del motore 5
@@ -58,13 +57,13 @@ mot_Right_1.setTorqueEnable(false); // Disable torque for safety
   delay(10);
 
   // Set the operating mode to Position Control Mode (Mode 3).
-  mot_Left_1.setOperatingMode(3);
-  mot_Right_1.setOperatingMode(3);
-  mot_2.setOperatingMode(3);
-  mot_3.setOperatingMode(3);
-  mot_4.setOperatingMode(3);
-  mot_5.setOperatingMode(3);
-  mot_6.setOperatingMode(3);
+  mot_Left_1.setOperatingMode(4);
+  mot_Right_1.setOperatingMode(4);
+  mot_2.setOperatingMode(4);
+  mot_3.setOperatingMode(4);
+  mot_4.setOperatingMode(4);
+  mot_5.setOperatingMode(4);
+  mot_6.setOperatingMode(4);
 
   delay(10);
 
@@ -140,106 +139,123 @@ void loop() {
        switch (c)
        {
        case 'w': // W -> Motore 1 avanti
-       case 'W':
+       case 'W':{
 
         getpositions[0] += step;; // Set the position for motor 1
         getpositions[1] -= step; // Set the position for motor 2
-        dxl.setGoalPosition_PCM((uint16_t[2]){(uint16_t)getpositions[0], (uint16_t)getpositions[1]});
+        int32_t positions_sync[2] = {(int32_t)getpositions[0], (int32_t)getpositions[1]};
+        dxl.setGoalPosition_EPCM(positions_sync);
         print_motor_status();
-         break;
-
+        break;
+       }
        case 's': // S -> Motore 1 indietro
-       case 'S':
+       case 'S':{
 
        getpositions[0] -= step;; // Set the position for motor 1
        getpositions[1] += step; // Set the position for motor 2
-       dxl.setGoalPosition_PCM((uint16_t[2]){(uint16_t)getpositions[0], (uint16_t)getpositions[1]});
+       int32_t positions_sync[2] = {(int32_t)getpositions[0], (int32_t)getpositions[1]};
+        dxl.setGoalPosition_EPCM(positions_sync);
        print_motor_status();
-         break;
-
+        break;
+       }
        case 'd': // D -> Motore 2 avanti
-       case 'D':
+       case 'D':{
 
        getpositions[0] -= step;; // Set the position for motor 1
        getpositions[1] -= step; // Set the position for motor 2
-       dxl.setGoalPosition_PCM((uint16_t[2]){(uint16_t)getpositions[0], (uint16_t)getpositions[1]});
+       int32_t positions_sync[2] = {(int32_t)getpositions[0], (int32_t)getpositions[1]};
+        dxl.setGoalPosition_EPCM(positions_sync);
        print_motor_status();
          break;
+        }
 
        case 'a': // A -> Motore 2 indietro
-       case 'A':
+       case 'A':{
 
        getpositions[0] += step;; // Set the position for motor 1
        getpositions[1] += step; // Set the position for motor 2
-       dxl.setGoalPosition_PCM((uint16_t[2]){(uint16_t)getpositions[0], (uint16_t)getpositions[1]});
-       print_motor_status();
+       int32_t positions_sync[2] = {(int32_t)getpositions[0], (int32_t)getpositions[1]};
+        dxl.setGoalPosition_EPCM(positions_sync);
+        print_motor_status();
          break;
+        }
         case 'y':
-        case 'Y':
+        case 'Y':{
         pos_mot_2 += step; // Incrementa la posizione del motore 3
-        mot_2.setGoalPosition_PCM( pos_mot_2);  // Address 65, Value 1, Size 1 byte
+        mot_2.setGoalPosition_EPCM( pos_mot_2);  // Address 65, Value 1, Size 1 byte
         print_motor_status();
         break;
+        }
         case 'h':
-        case 'H':
+        case 'H':{
         pos_mot_2 -= step; // Decrementa la posizione del motore 3
-        mot_2.setGoalPosition_PCM( pos_mot_2);  // Address 65, Value 1, Size 1 byte
+        mot_2.setGoalPosition_EPCM( pos_mot_2);  // Address 65, Value 1, Size 1 byte
         print_motor_status();
         break;
+        }
         case 'u':
-        case 'U':
+        case 'U':{
         pos_mot_3 += step2; // Incrementa la posizione del motore 4
-        mot_3.setGoalPosition_PCM( pos_mot_3);  // Address 65, Value 1, Size 1 byte
+        mot_3.setGoalPosition_EPCM( pos_mot_3);  // Address 65, Value 1, Size 1 byte
         print_motor_status();
         break;
+        }
         case 'j':
-        case 'J':
+        case 'J':{
         pos_mot_3 -= step2; // Decrementa la posizione del motore 4
-        mot_3.setGoalPosition_PCM( pos_mot_3);  // Address 65, Value 1, Size 1 byte
+        mot_3.setGoalPosition_EPCM( pos_mot_3);  // Address 65, Value 1, Size 1 byte
         print_motor_status();
         break;
+        }
         case 'i':
-        case 'I':
+        case 'I':{
         pos_mot_4 -= step2; // Incrementa la posizione del motore 5
-        mot_4.setGoalPosition_PCM( pos_mot_4);  // Address 65, Value 1, Size 1 byte
+        mot_4.setGoalPosition_EPCM( pos_mot_4);  // Address 65, Value 1, Size 1 byte
         print_motor_status();
         break;
+        }
         case 'k':
-        case 'K':
+        case 'K':{
         pos_mot_4 += step2; // Decrementa la posizione del motore 5
-        mot_4.setGoalPosition_PCM( pos_mot_4);  // Address 65, Value 1, Size 1 byte
+        mot_4.setGoalPosition_EPCM( pos_mot_4);  // Address 65, Value 1, Size 1 byte
         print_motor_status();
         break;
+        }
         case 'o':
-        case 'O':
+        case 'O':{
         pos_mot_5 += step2; // Incrementa la posizione del motore 6
-        mot_5.setGoalPosition_PCM( pos_mot_5);  // Address 65, Value 1, Size 1 byte
+        mot_5.setGoalPosition_EPCM( pos_mot_5);  // Address 65, Value 1, Size 1 byte
         print_motor_status();
         break;
+        }
         case 'l':
-        case 'L':
+        case 'L':{
         pos_mot_5 -= step2; // Decrementa la posizione del motore 6
-        mot_5.setGoalPosition_PCM( pos_mot_5);  // Address 65, Value 1, Size 1 byte
+        mot_5.setGoalPosition_EPCM( pos_mot_5);  // Address 65, Value 1, Size 1 byte
         print_motor_status();
         break;
+        }
         case 'x':
-        case 'X':
+        case 'X':{
         pos_mot_6 +=step2;
-        mot_6.setGoalPosition_PCM(pos_mot_6);
+        mot_6.setGoalPosition_EPCM(pos_mot_6);
         print_motor_status();
         break;
+        }
         case 'z':
-        case 'Z':
+        case 'Z':{
         pos_mot_6 -= step2; // Decrementa la posizione del motore 6
-        mot_6.setGoalPosition_PCM(pos_mot_6);  // Address 65, Value 1, Size 1 byte
+        mot_6.setGoalPosition_EPCM(pos_mot_6);  // Address 65, Value 1, Size 1 byte
         print_motor_status();
         break;
+        }
 
 
 
-       default:
+       default:{
          Serial.println("Tasto non riconosciuto.");
          break;
+       }
          delay(10);
        }
 
