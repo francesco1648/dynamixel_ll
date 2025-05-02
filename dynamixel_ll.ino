@@ -71,7 +71,7 @@ void loop() {
   setLED[1] = 1;
   
   // Sync write Goal Position (register 116, 4 bytes) and LED (register 65, 1 byte) for all motors.
-  dxl.setGoalPosition(positions);
+  dxl.setGoalPosition_PCM(positions);
   dxl.setLED(setLED);
   Serial.println("\nInitial Position sent to motors\n");
   delay(3000);
@@ -88,7 +88,7 @@ void loop() {
   positions[1] = 4095;
   setLED[0] = 1;
   setLED[1] = 0;
-  dxl.setGoalPosition(positions);
+  dxl.setGoalPosition_PCM(positions);
   dxl.setLED(setLED);
 
   Serial.println("\nFinal Position sent to motors");

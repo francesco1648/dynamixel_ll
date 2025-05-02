@@ -4,7 +4,7 @@
 #ifndef DYNAMIXEL_LL_H
 #define DYNAMIXEL_LL_H
 
-/** 
+/**
  * @file Dynamixel_ll.h
  * @brief Interface for low‐level Dynamixel servo communication (Protocol 2.0).
  */
@@ -99,7 +99,7 @@ public:
 
     /**
      * @brief Sets the operating mode of the servo.
-     * 
+     *
      * Allowed: 1 = Velocity, 3 = Position, 4 = Extended Position, 16 = PWM.
      * @param mode The desired mode (1, 3, 4, or 16).
      * @return uint8_t 0 on success, nonzero if unsupported.
@@ -117,9 +117,9 @@ public:
 
     /**
      * @brief Sets actuator’s home position.
-     * 
+     *
      * The offset is in degrees and is converted to pulses internally.
-     * 
+     *
      * @param offsetAngle Desired home position in degrees.
      * @return uint8_t 0 on success, nonzero on error.
      */
@@ -139,7 +139,7 @@ public:
      * @param goalPosition Desired position (0 to 4095 pulses).
      * @return uint8_t 0 on success.
      */
-    uint8_t setGoalPosition(uint16_t goalPosition);
+    uint8_t setGoalPosition_PCM(uint16_t goalPosition);
 
     /**
      * @brief Sets the actuator’s desired output position (pulses) for multiple motors.
@@ -148,14 +148,14 @@ public:
      * @return uint8_t 0 on success, nonzero on error.
      */
     template <uint8_t N>
-    uint8_t setGoalPosition(const uint16_t (&goalPositions)[N]);
+    uint8_t setGoalPosition_PCM(const uint16_t (&goalPositions)[N]);
 
     /**
      * @brief Sets the actuator’s desired output position (angle in degrees) for Position Control Mode.
      * @param angleDegrees Desired angle in degrees (0 to 360 degrees).
      * @return uint8_t 0 on success.
      */
-    uint8_t setGoalPosition(float angleDegrees);
+    uint8_t setGoalPosition_A_PCM(float angleDegrees);
 
     /**
      * @brief Sets the actuator’s desired output position (angles) for multiple motors.
@@ -164,14 +164,14 @@ public:
      * @return uint8_t 0 on success, nonzero on error.
      */
     template <uint8_t N>
-    uint8_t setGoalPosition(const float (&angleDegrees)[N]);
+    uint8_t setGoalPosition_A_PCM(const float (&angleDegrees)[N]);
 
     /**
      * @brief Sets the actuator’s desired output position (pulses) for Extended Position Control Mode.
      * @param extendedPosition Desired position (from -1,048,575 to +1,048,575 pulses).
      * @return uint8_t 0 on success.
      */
-    uint8_t setGoalPosition(int32_t extendedPosition);
+    uint8_t setGoalPosition_EPCM(int32_t extendedPosition);
 
     /**
      * @brief Sets the actuator’s desired output position (pulses) for multiple motors.
@@ -180,7 +180,7 @@ public:
      * @return uint8_t 0 on success, nonzero on error.
      */
     template <uint8_t N>
-    uint8_t setGoalPosition(int32_t (&extendedPositions)[N]);
+    uint8_t setGoalPosition_EPCM(int32_t (&extendedPositions)[N]);
 
     /**
      * @brief Enables or disables torque for the DYNAMIXEL’s internal motor.
@@ -205,7 +205,7 @@ public:
      * @return uint8_t 0 on success.
      */
     uint8_t setLED(bool enable);
-    
+
     /**
      * @brief Turns the servo LED on or off for multiple motors.
      * @tparam N Size of the input array, must match the number of motors in sync.
@@ -217,11 +217,11 @@ public:
 
     /**
      * @brief Set the DYNAMIXEL’s response policy to define which instructions will generate a status packet.
-     * 
+     *
      * - 0: Return status packet for PING instructions only.
-     * 
+     *
      * - 1: Return status packet for PING and READ instructions.
-     * 
+     *
      * - 2: Return status packet for all instructions
      * @param level Desired level (0, 1, or 2).
      * @return uint8_t 0 on success.
@@ -255,9 +255,9 @@ public:
 
     /**
      * @brief Sets the baud rate.
-     * Allowed codes: 
-     * 
-     * 7 -> 4.5M, 6 -> 4M, 5 -> 3M, 4 -> 2M, 3 -> 1M, 2 -> 115200, 
+     * Allowed codes:
+     *
+     * 7 -> 4.5M, 6 -> 4M, 5 -> 3M, 4 -> 2M, 3 -> 1M, 2 -> 115200,
      * 1 (default) -> 57600, and 0 -> 9600.
      * @param baudRate Baud rate code (0-7).
      * @return uint8_t 0 on success.
@@ -292,11 +292,11 @@ public:
     /**
      * @brief Configures the drive mode of the servo.
      * Constructs a 1-byte mode value where:
-     * 
+     *
      * - Bit 3 (0x08): Movements are executed regardless of the current torque state.
-     * 
+     *
      * - Bit 2 (0x04): Time-based profile (true) vs. velocity-based (false).
-     * 
+     *
      * - Bit 0 (0x01): Reverse mode.
      * @param torqueOnByGoalUpdate True to enable torque on goal update.
      * @param timeBasedProfile True for time-based profile.
@@ -341,7 +341,7 @@ public:
 
     /**
      * @brief Sets the Profile Acceleration.
-     * 
+     *
      * Configures the motion profile’s acceleration (or allowed acceleration time).
      * In time-based mode, the value is further limited to not exceed 50% of the current Profile Velocity.
      *

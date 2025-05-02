@@ -55,7 +55,7 @@ uint8_t DynamixelLL::setHomingOffset(const float (&offsetAngle)[N])
 
 
 template <uint8_t N>
-uint8_t DynamixelLL::setGoalPosition(const uint16_t (&goalPositions)[N])
+uint8_t DynamixelLL::setGoalPosition_PCM(const uint16_t (&goalPositions)[N])
 {
     // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
@@ -79,7 +79,7 @@ uint8_t DynamixelLL::setGoalPosition(const uint16_t (&goalPositions)[N])
 
 
 template <uint8_t N>
-uint8_t DynamixelLL::setGoalPosition(const float (&angleDegrees)[N])
+uint8_t DynamixelLL::setGoalPosition_A_PCM(const float (&angleDegrees)[N])
 {
     // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
@@ -101,7 +101,7 @@ uint8_t DynamixelLL::setGoalPosition(const float (&angleDegrees)[N])
 
 
 template <uint8_t N>
-uint8_t DynamixelLL::setGoalPosition(int32_t (&extendedPositions)[N])
+uint8_t DynamixelLL::setGoalPosition_EPCM(int32_t (&extendedPositions)[N])
 {
     // Check if N matches the expected number of motors
     if (checkArraySize(N) != 0)
