@@ -9,7 +9,7 @@ const uint8_t numMotors = sizeof(motorIDs) / sizeof(motorIDs[0]);
 
 // Arrays for positions, statuses, and LED settings.
 uint16_t positions[numMotors];
-uint32_t getpositions[2];
+int32_t getpositions[2];
 
 uint32_t setLED[numMotors];
  #define ProfileAcceleration 10
@@ -26,11 +26,11 @@ DynamixelLL mot_4(Serial2, 214);  // ID = 5
 DynamixelLL mot_5(Serial2, 215);  // ID = 6
 DynamixelLL mot_6(Serial2, 216);
 
-uint32_t pos_mot_2 = 2017; // Posizione iniziale del motore 3
-uint32_t pos_mot_3 = 1995; // Posizione iniziale del motore 4
-uint32_t pos_mot_4 = 1066; // Posizione iniziale del motore 5
-uint32_t pos_mot_5 = 2025; // Posizione iniziale del motore 6
-uint32_t pos_mot_6 = 200;
+int32_t pos_mot_2 = 2017; // Posizione iniziale del motore 3
+int32_t pos_mot_3 = 1995; // Posizione iniziale del motore 4
+int32_t pos_mot_4 = 1066; // Posizione iniziale del motore 5
+int32_t pos_mot_5 = 2025; // Posizione iniziale del motore 6
+int32_t pos_mot_6 = 200;
 
 int step = 15;  // Incremento/decremento per ogni pressione del tasto
 int step2 = 45; // Incremento/decremento per i motori 3, 4, 5, 6
@@ -143,8 +143,7 @@ void loop() {
 
         getpositions[0] += step;; // Set the position for motor 1
         getpositions[1] -= step; // Set the position for motor 2
-        int32_t positions_sync[2] = {(int32_t)getpositions[0], (int32_t)getpositions[1]};
-        dxl.setGoalPosition_EPCM(positions_sync);
+        dxl.setGoalPosition_EPCM(getpositions);
         print_motor_status();
         break;
        }
@@ -153,8 +152,7 @@ void loop() {
 
        getpositions[0] -= step;; // Set the position for motor 1
        getpositions[1] += step; // Set the position for motor 2
-       int32_t positions_sync[2] = {(int32_t)getpositions[0], (int32_t)getpositions[1]};
-        dxl.setGoalPosition_EPCM(positions_sync);
+        dxl.setGoalPosition_EPCM(getpositions);
        print_motor_status();
         break;
        }
@@ -163,8 +161,7 @@ void loop() {
 
        getpositions[0] -= step;; // Set the position for motor 1
        getpositions[1] -= step; // Set the position for motor 2
-       int32_t positions_sync[2] = {(int32_t)getpositions[0], (int32_t)getpositions[1]};
-        dxl.setGoalPosition_EPCM(positions_sync);
+        dxl.setGoalPosition_EPCM(getpositions);
        print_motor_status();
          break;
         }
@@ -174,8 +171,7 @@ void loop() {
 
        getpositions[0] += step;; // Set the position for motor 1
        getpositions[1] += step; // Set the position for motor 2
-       int32_t positions_sync[2] = {(int32_t)getpositions[0], (int32_t)getpositions[1]};
-        dxl.setGoalPosition_EPCM(positions_sync);
+        dxl.setGoalPosition_EPCM(getpositions);
         print_motor_status();
          break;
         }
