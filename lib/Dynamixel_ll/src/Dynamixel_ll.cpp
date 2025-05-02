@@ -1200,9 +1200,21 @@ uint8_t DynamixelLL::setProfileAcceleration(uint32_t profileAcceleration)
 }
 
 
-uint8_t DynamixelLL::getPresentPosition(uint32_t &presentPosition)
+uint8_t DynamixelLL::getPresentPosition(int32_t &presentPosition)
 {
-    return readRegister(132, presentPosition, 4); // RAM address 132, 4 bytes
+    uint32_t temp = 0;
+    uint8_t error = readRegister(132, temp, 4); // RAM address 132, 4 bytes
+
+    if (error != 0)
+    {
+        if (_debug)
+        {
+            Serial.print("Error reading Present Position: ");
+            Serial.println(error, HEX);
+        }
+    } else
+        presentPosition = static_cast<int32_t>(temp); // Convert to int32_t for output.
+    return error;
 }
 
 

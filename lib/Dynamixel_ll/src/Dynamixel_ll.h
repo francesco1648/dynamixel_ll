@@ -364,7 +364,7 @@ public:
      * @param presentPosition Reference to store the 4-byte position (from -2,147,483,648 to 2,147,483,647).
      * @return uint8_t 0 on success.
      */
-    uint8_t getPresentPosition(uint32_t &presentPosition);
+    uint8_t getPresentPosition(int32_t &presentPosition);
 
     /**
      * @brief Retrieves the current present position for multiple motors.
@@ -373,7 +373,7 @@ public:
      * @return uint8_t 0 on success, nonzero on error.
      */
     template <uint8_t N>
-    uint8_t getPresentPosition(uint32_t (&presentPositions)[N]);
+    uint8_t getPresentPosition(int32_t (&presentPositions)[N]);
 
     /**
      * @brief Gets the moving status of the servo.

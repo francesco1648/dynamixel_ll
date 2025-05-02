@@ -10,7 +10,7 @@ const uint8_t numMotors = sizeof(motorIDs) / sizeof(motorIDs[0]);
 // Arrays for positions, statuses, and LED settings.
 float homingOffset[numMotors];
 uint16_t positions[numMotors];
-uint32_t getpositions[numMotors];
+int32_t getpositions[numMotors];
 bool setLED[numMotors];
 
 // Create individual motor objects for setup (if needed for individual writes).

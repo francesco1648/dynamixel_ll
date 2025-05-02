@@ -380,10 +380,25 @@ uint8_t DynamixelLL::setProfileAcceleration(const uint32_t (&profileAcceleration
 
 
 template <uint8_t N>
-uint8_t DynamixelLL::getPresentPosition(uint32_t (&presentPositions)[N])
+uint8_t DynamixelLL::getPresentPosition(int32_t (&presentPositions)[N])
 {
     // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
         return 1; // Propagate error code
-    return syncRead(132, 4, _motorIDs, presentPositions, _numMotors); // RAM address 132, 4 bytes
+    
+    uint32_t temp[_numMotors];
+    uint8_t error = syncRead(132, 4, _motorIDs, temp, _numMotors); // RAM address 132, 4 bytes
+    if (error != 0)
+    {
+        if (_debug)
+        {
+            Serial.print("Error reading present position: ");
+            Serial.println(error);
+        }
+    } else
+    {
+        for (uint8_t i = 0; i < _numMotors; i++)
+            presentPositions[i] = static_cast<int32_t>(temp[i]);
+    }
+    return error;
 }
