@@ -32,7 +32,7 @@ int32_t pos_mot_4 = 1066; // Posizione iniziale del motore 5
 int32_t pos_mot_5 = 2025; // Posizione iniziale del motore 6
 int32_t pos_mot_6 = 200;
 
-int step = 15;  // Incremento/decremento per ogni pressione del tasto
+int step = 30;  // Incremento/decremento per ogni pressione del tasto
 int step2 = 45; // Incremento/decremento per i motori 3, 4, 5, 6
 void print_motor_status(); // Function prototype
 
