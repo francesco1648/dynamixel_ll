@@ -1255,3 +1255,26 @@ MovingStatus DynamixelLL::getMovingStatus()
 
     return status;
 }
+
+
+/**
+ * Legge il "Present Load" (coppia/forza in unità arbitrarie) e lo restituisce
+ * come valore signed (12 bit: bit 10 = segno, bit 0–9 = magnitudine).
+ *
+ * @param currentLoad  variabile di output (int16_t) che conterrà il valore signed
+ * @return             codice di errore (0 = OK)
+ */
+uint8_t DynamixelLL::getCurrentLoad(int16_t &currentLoad)
+{
+    uint32_t raw = 0;
+    // RAM address 126, 2 byte
+    uint8_t error = readRegister(126, raw, 2);
+    if (error == 0) {
+        uint16_t val12 = raw & 0x0FFF;         // 12 bit utili
+        if (val12 & 0x0400)                    // bit 10 = segno
+            currentLoad = -static_cast<int16_t>(val12 & 0x03FF);
+        else
+            currentLoad =  static_cast<int16_t>(val12 & 0x03FF);
+    }
+    return error;
+}

@@ -10,7 +10,7 @@ const uint8_t numMotors = sizeof(motorIDs) / sizeof(motorIDs[0]);
 // Arrays for positions, statuses, and LED settings.
 uint16_t positions[numMotors];
 int32_t getpositions[2];
-
+int16_t presentLoad;
 uint32_t setLED[numMotors];
  #define ProfileAcceleration 10
   #define ProfileVelocity 20
@@ -55,6 +55,7 @@ mot_Right_1.setTorqueEnable(false); // Disable torque for safety
   mot_6.setTorqueEnable(false);
 
   delay(10);
+  mot_6.setStatusReturnLevel(2);
 
   // Set the operating mode to Position Control Mode (Mode 3).
   mot_Left_1.setOperatingMode(4);
@@ -236,12 +237,27 @@ void loop() {
         pos_mot_6 +=step2;
         mot_6.setGoalPosition_EPCM(pos_mot_6);
         print_motor_status();
+        mot_6.getCurrentLoad(presentLoad);
+        Serial.print("load");
+        Serial.println(presentLoad);
+        if(presentLoad > 200) {
+          mot_6.getPresentPosition(pos_mot_6);
+          mot_6.setGoalPosition_EPCM(pos_mot_6);  // Address 65, Value 1, Size 1 byte
+        }
         break;
         }
         case 'z':
         case 'Z':{
         pos_mot_6 -= step2; // Decrementa la posizione del motore 6
         mot_6.setGoalPosition_EPCM(pos_mot_6);  // Address 65, Value 1, Size 1 byte
+        mot_6.getCurrentLoad(presentLoad);
+        Serial.print("load");
+        Serial.println(presentLoad);
+        if(presentLoad > 200) {
+          mot_6.getPresentPosition(pos_mot_6);
+          mot_6.setGoalPosition_EPCM(pos_mot_6);  // Address 65, Value 1, Size 1 byte
+        }
+
         print_motor_status();
         break;
         }

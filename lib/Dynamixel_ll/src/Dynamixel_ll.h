@@ -390,6 +390,7 @@ public:
      */
     uint8_t ping(uint32_t &value);
 
+    uint8_t getCurrentLoad(int16_t &currentLoad);
 private:
     HardwareSerial &_serial;        ///< Reference to the serial interface.
     uint8_t _servoID;               ///< Servo ID.
