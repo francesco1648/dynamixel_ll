@@ -951,12 +951,6 @@ uint8_t DynamixelLL::setGoalPosition_PCM(uint16_t goalPosition)
         if (_debug)
             Serial.println("Warning: Goal position clamped to 4005.");
     }
-    if (goalPosition < 50)
-    {
-        goalPosition = 50;
-        if (_debug)
-            Serial.println("Warning: Goal position clamped to 50.");
-    }
 
     uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
     for(uint8_t i = 0; i < _numMotors; i++)
