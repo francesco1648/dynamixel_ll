@@ -101,7 +101,7 @@ uint8_t DynamixelLL::setGoalPosition_A_PCM(const float (&angleDegrees)[N])
 
 
 template <uint8_t N>
-uint8_t DynamixelLL::setGoalPosition_EPCM(int32_t (&extendedPositions)[N])
+uint8_t DynamixelLL::setGoalPosition_EPCM(const int32_t (&extendedPositions)[N])
 {
     // Check if N matches the expected number of motors
     if (checkArraySize(N) != 0)
@@ -113,16 +113,15 @@ uint8_t DynamixelLL::setGoalPosition_EPCM(int32_t (&extendedPositions)[N])
         // Clamp within valid range: -1,048,575 to +1,048,575 pulses.
         if (extendedPositions[i] > 1048575)
         {
-            extendedPositions[i] = 1048575;
+            processedPositions[i] = 1048575;
             if (_debug)
                 Serial.println("Warning: Extended position clamped to 1048575.");
         } else if (extendedPositions[i] < -1048575) {
-            extendedPositions[i] = -1048575;
+            processedPositions[i] = -1048575;
             if (_debug)
                 Serial.println("Warning: Extended position clamped to -1048575.");
-        }
-        // Convert to uint32_t for writing to register.
-        processedPositions[i] = static_cast<uint32_t>(extendedPositions[i]);
+        } else
+            processedPositions[i] = extendedPositions[i]; // Implicitly convert to uint32_t
     }
     return writeRegister(116, processedPositions, 4); // RAM address 116, 4 bytes
 }

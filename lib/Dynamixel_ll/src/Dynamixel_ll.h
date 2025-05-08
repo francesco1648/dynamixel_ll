@@ -180,7 +180,7 @@ public:
      * @return uint8_t 0 on success, nonzero on error.
      */
     template <uint8_t N>
-    uint8_t setGoalPosition_EPCM(int32_t (&extendedPositions)[N]);
+    uint8_t setGoalPosition_EPCM(const int32_t (&extendedPositions)[N]);
 
     /**
      * @brief Enables or disables torque for the DYNAMIXEL’s internal motor.
