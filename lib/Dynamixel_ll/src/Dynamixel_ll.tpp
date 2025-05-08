@@ -416,13 +416,38 @@ uint8_t DynamixelLL::getPresentPosition(int32_t (&presentPositions)[N])
     {
         if (_debug)
         {
-            Serial.print("Error reading present position: ");
+            Serial.print("Error reading Present Position: ");
             Serial.println(error);
         }
     } else
     {
         for (uint8_t i = 0; i < _numMotors; i++)
             presentPositions[i] = static_cast<int32_t>(temp[i]);
+    }
+    return error;
+}
+
+
+template <uint8_t N>
+uint8_t DynamixelLL::getCurrentLoad(int16_t (&currentLoad)[N])
+{
+    // Check if array size N matches the expected number of motors
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
+    
+    uint32_t temp[_numMotors];
+    uint8_t error = syncRead(126, 2, _motorIDs, temp, _numMotors); // RAM address 126, 2 bytes
+    if (error != 0)
+    {
+        if (_debug)
+        {
+            Serial.print("Error reading Current Load: ");
+            Serial.println(error);
+        }
+    } else
+    {
+        for (uint8_t i = 0; i < _numMotors; i++)
+            currentLoad[i] = static_cast<int16_t>(temp[i]);
     }
     return error;
 }

@@ -392,6 +392,22 @@ public:
     uint8_t getPresentPosition(int32_t (&presentPositions)[N]);
 
     /**
+     * @brief Get an estimate of the current load of the motor (torque/force).
+     * @param currentLoad Reference to store the current load in 0.1% unit, valid range: -1000 (CW Load) - 1000 (CCW Load).
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    uint8_t getCurrentLoad(int16_t &currentLoad);
+
+    /**
+     * @brief Retrieves an estimate of the current load for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param currentLoad Array to store the current loads for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t getCurrentLoad(int16_t (&currentLoad)[N]);
+
+    /**
      * @brief Gets the moving status of the servo.
      * @return MovingStatus Status information.
      */

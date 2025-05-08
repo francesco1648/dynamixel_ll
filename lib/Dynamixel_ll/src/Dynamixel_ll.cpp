@@ -1232,6 +1232,24 @@ uint8_t DynamixelLL::getPresentPosition(int32_t &presentPosition)
 }
 
 
+uint8_t DynamixelLL::getCurrentLoad(int16_t &currentLoad)
+{
+    uint32_t temp = 0;
+    uint8_t error = readRegister(126, temp, 2); // RAM address 126, 2 bytes
+    
+    if (error != 0)
+    {
+        if (_debug)
+        {
+            Serial.print("Error reading Current Load: ");
+            Serial.println(error, HEX);
+        }
+    } else
+        currentLoad = static_cast<int16_t>(temp); // Convert to int16_t for output.
+    return error;
+}
+
+
 MovingStatus DynamixelLL::getMovingStatus()
 {
     MovingStatus status;
