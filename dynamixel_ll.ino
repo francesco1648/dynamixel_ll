@@ -42,7 +42,7 @@ void setup() {
   dxl.setOperatingMode(3);
 
   // Set Homing Offset for each motor:
-  dxl.setHomingOffset(homingOffset);
+  dxl.setHomingOffset_A(homingOffset);
 
   // Enable torque for both motors.
   dxl.setTorqueEnable(true);

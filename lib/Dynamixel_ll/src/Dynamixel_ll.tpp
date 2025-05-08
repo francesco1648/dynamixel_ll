@@ -25,7 +25,33 @@ uint8_t DynamixelLL::setOperatingMode(const uint8_t (&modes)[N])
 
 
 template <uint8_t N>
-uint8_t DynamixelLL::setHomingOffset(const float (&offsetAngle)[N])
+uint8_t DynamixelLL::setHomingOffset(const int32_t (&offset)[N])
+{
+    // Check if array size N matches the expected number of motors
+    if (checkArraySize(N) != 0)
+        return 1; // Propagate error code
+
+    uint32_t offsetArray[_numMotors];
+    for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
+    {
+        if (offset[i] > 1044479)
+        {
+            offsetArray[i] = 1044479;
+            if (_debug)
+                Serial.println("Warning: Homing offset clamped to 1044479.");
+        } else if (offset[i] < -1044479) {
+            offsetArray[i] = -1044479;
+            if (_debug)
+                Serial.println("Warning: Homing offset clamped to -1044479.");
+        } else
+            offsetArray[i] = offset[i];
+    }
+    return writeRegister(20, offsetArray, 4); // RAM address 20, 4 bytes
+}
+
+
+template <uint8_t N>
+uint8_t DynamixelLL::setHomingOffset_A(const float (&offsetAngle)[N])
 {
     // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
@@ -39,16 +65,15 @@ uint8_t DynamixelLL::setHomingOffset(const float (&offsetAngle)[N])
         offsetPulse[i] = static_cast<int32_t>(offsetAngle[i] / 0.088);
         if (offsetPulse[i] > 1044479)
         {
-            offsetPulse[i] = 1044479;
+            offsetArray[i] = 1044479;
             if (_debug)
                 Serial.println("Warning: Homing offset clamped to 1044479.");
         } else if (offsetPulse[i] < -1044479) {
-            offsetPulse[i] = -1044479;
+            offsetArray[i] = -1044479;
             if (_debug)
                 Serial.println("Warning: Homing offset clamped to -1044479.");
-        }
-        // Convert to uint32_t for writing to register.
-        offsetArray[i] = static_cast<uint32_t>(offsetPulse[i]);
+        } else
+            offsetArray[i] = offsetPulse[i]; // implicitly convert to uint32_t
     }
     return writeRegister(20, offsetArray, 4); // RAM address 20, 4 bytes
 }

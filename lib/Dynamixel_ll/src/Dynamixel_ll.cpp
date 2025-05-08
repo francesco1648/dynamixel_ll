@@ -919,7 +919,27 @@ uint8_t DynamixelLL::setOperatingMode(uint8_t mode)
 }
 
 
-uint8_t DynamixelLL::setHomingOffset(float offsetAngle)
+uint8_t DynamixelLL::setHomingOffset(int32_t offset)
+{
+    if (offset > 1044479)
+    {
+        offset = 1044479;
+        if (_debug)
+            Serial.println("Warning: Homing offset clamped to 1044479.");
+    } else if (offset < -1044479) {
+        offset = -1044479;
+        if (_debug)
+            Serial.println("Warning: Homing offset clamped to -1044479.");
+    }
+
+    uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
+    for(uint8_t i = 0; i < _numMotors; i++)
+        buffer[i] = static_cast<uint32_t>(offset); // Convert to uint32_t for writing to register.
+    return writeRegister(20, buffer, 4); // EEPROM address 11, 1 byte
+}
+
+
+uint8_t DynamixelLL::setHomingOffset_A(float offsetAngle)
 {
     // Convert angle in degrees to pulses using conversion factor 0.088 [deg/pulse].
     uint32_t offset = offsetAngle / 0.088;
