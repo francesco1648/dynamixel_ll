@@ -100,7 +100,13 @@ public:
     /**
      * @brief Sets the operating mode of the servo.
      *
-     * Allowed: 1 = Velocity, 3 = Position, 4 = Extended Position, 16 = PWM.
+     * - 1: Velocity
+     * 
+     * - 3: Position
+     * 
+     * - 4: Extended Position
+     * 
+     * - 16: PWM.
      * @param mode The desired mode (1, 3, 4, or 16).
      * @return uint8_t 0 on success, nonzero if unsupported.
      */
@@ -563,7 +569,7 @@ private:
     bool sendRawPacket(const uint8_t* packet, uint16_t length);
 
     /**
-     * @brief A helper function for template overloads. Checks the size of an array.
+     * @brief A helper function for template overloads. Checks if the array size matches the number of motors.
      * @param arraySize Size of the array to check.
      * @return uint8_t 0 if valid, nonzero if invalid.
      */

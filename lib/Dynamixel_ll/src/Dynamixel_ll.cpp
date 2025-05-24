@@ -1,5 +1,5 @@
 #include "Dynamixel_ll.h"
-#define time_delay 0
+#define time_delay 10
 DynamixelLL::DynamixelLL(HardwareSerial &serial, uint8_t servoID)
     : _serial(serial), _servoID(servoID) {}
 
@@ -150,7 +150,6 @@ void DynamixelLL::enableSync(const uint8_t* motorIDs, uint8_t numMotors)
 
 void DynamixelLL::disableSync()
 {
-    // Disable sync mode and clean up allocated memory.
     if (_motorIDs != nullptr) {
         delete[] _motorIDs;
         _motorIDs = nullptr;
@@ -165,9 +164,9 @@ uint8_t DynamixelLL::checkArraySize(uint8_t arraySize) const {
         if (_debug) {
             Serial.println("Error: Array size does not match number of motors.");
         }
-        return 1; // Error code for size mismatch
+        return 1;
     }
-    return 0; // No error
+    return 0;
 }
 
 
@@ -178,11 +177,10 @@ uint8_t DynamixelLL::checkArraySize(uint8_t arraySize) const {
 
 uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t* value, uint8_t size, uint8_t sizeResponse)
 {
-    // Enable sync write pathline if _sync is set.
     if (_sync)
     {
         syncWrite(address, size, _motorIDs, value, _numMotors);
-        return 0; // Assume success for sync write.
+        return 0;
     }
 
     // length: Instruction (1) + Address (2) + CRC (2) + Data (size bytes) = 5 + size.
@@ -227,7 +225,7 @@ uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t* value, uint8_t si
 
     // Send the Packet
     sendPacket(packet, lenNoCRC + 2);
-    delay(time_delay); // Allow time for the servo to process the command.
+    delay(time_delay);
 
     // Receive and Process the Response
     StatusPacket response = receivePacket();
@@ -278,7 +276,7 @@ uint8_t DynamixelLL::readRegister(uint16_t address, uint32_t &value, uint8_t siz
     packet[12] = crc & 0xFF;
     packet[13] = (crc >> 8) & 0xFF;
 
-    // Transmit the packet and wait briefly.
+    // Transmit the packet.
     sendPacket(packet, 14);
     delay(time_delay);
 
@@ -293,7 +291,6 @@ uint8_t DynamixelLL::readRegister(uint16_t address, uint32_t &value, uint8_t siz
         }
     }
 
-    // Convert parameter data (little-endian) into a 32-bit value.
     value = 0;
     for (uint8_t i = 0; i < response.dataLength; i++) {
         value |= (response.data[i] << (8 * i));
@@ -306,14 +303,12 @@ uint8_t DynamixelLL::readRegister(uint16_t address, uint32_t &value, uint8_t siz
 
 void DynamixelLL::sendPacket(const uint8_t *packet, uint8_t length)
 {
-    // If debug mode is enabled, print the packet contents in hexadecimal.
     if (_debug)
     {
         Serial.print("Sent Packet: ");
         for (uint8_t i = 0; i < length; ++i)
         {
             Serial.print("0x");
-            // Print a leading zero for single-digit hex values.
             if (packet[i] < 0x10)
                 Serial.print("0");
             Serial.print(packet[i], HEX);
@@ -321,7 +316,6 @@ void DynamixelLL::sendPacket(const uint8_t *packet, uint8_t length)
         }
         Serial.println();
     }
-    // Write the entire packet to the serial port.
     _serial.write(packet, length);
 }
 
@@ -331,7 +325,6 @@ StatusPacket DynamixelLL::receivePacket()
 {
     StatusPacket result = {false, 0, {0}, 0};
 
-    // Setup buffer, index, timeout, etc.
     const uint8_t maxPacketSize = 64;         // Maximum allowed packet size.
     uint8_t buffer[maxPacketSize];           // Buffer for incoming bytes.
     uint16_t index = 0;                      // Index into the buffer.
@@ -469,15 +462,14 @@ uint8_t DynamixelLL::ping(uint32_t &value)
 
     // Send the ping packet over the serial interface.
     sendPacket(packet, lenNoCRC + 2);
-    delay(time_delay); // Allow the servo time to process and respond.
+    delay(time_delay);
 
     // Receive the status packet in response (expecting a standard status packet).
     StatusPacket response = receivePacket(); // Params = 3 (Model Number (little-endian) + Version of Firmware)
 
-    // Extract returned parameter data into a 32-bit value (constructed in little-endian order).
     value = 0;
     for (uint8_t i = 0; i < response.dataLength; i++) {
-        value |= (response.data[i] << (8 * i));
+        value |= (response.data[i] >> (8 * i));
     }
 
     return response.error;
@@ -518,7 +510,6 @@ bool DynamixelLL::syncWrite(uint16_t address, uint8_t dataLength, const uint8_t*
             params[idx++] = (values[i] >> (8 * j)) & 0xFF;
     }
 
-    // With the complete parameter block built, send the full sync write packet.
     return sendSyncWritePacket(params, paramBlockLength);
 }
 
@@ -560,7 +551,6 @@ bool DynamixelLL::sendSyncWritePacket(const uint8_t* parameters, uint16_t parame
     packet[idx++] = crc & 0xFF;          // CRC LSB
     packet[idx++] = (crc >> 8) & 0xFF;     // CRC MSB
 
-    // Optionally, print packet for debugging:
     if (_debug)
     {
         Serial.print("Sync Write Packet: ");
@@ -575,7 +565,6 @@ bool DynamixelLL::sendSyncWritePacket(const uint8_t* parameters, uint16_t parame
         Serial.println();
     }
 
-    // Send the assembled packet.
     return sendRawPacket(packet, packetSize);
 }
 
@@ -646,7 +635,6 @@ bool DynamixelLL::sendSyncReadPacket(uint16_t address, uint8_t dataLength, const
     packet[idx++] = crc & 0xFF;       // CRC LSB
     packet[idx++] = (crc >> 8) & 0xFF;  // CRC MSB
 
-    // Optionally, print packet for debugging.
     if (_debug)
     {
         Serial.print("Sync Read Packet: ");
@@ -661,7 +649,6 @@ bool DynamixelLL::sendSyncReadPacket(uint16_t address, uint8_t dataLength, const
         Serial.println();
     }
 
-    // Send the assembled packet.
     return sendRawPacket(packet, packetSize);
 }
 
@@ -692,7 +679,6 @@ uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_
             }
             retError = response.error;
         }
-        // Convert the little-endian data bytes into a 32-bit value.
         values[i] = 0;
         for (uint8_t j = 0; j < response.dataLength; j++)
             values[i] |= (response.data[j] << (8 * j));
@@ -730,7 +716,6 @@ bool DynamixelLL::bulkWrite(const uint8_t* ids, uint16_t* addresses, uint8_t* da
             params[idx++] = (values[i] >> (8 * j)) & 0xFF;
     }
 
-    // With the complete parameter block built, send the full bulk write packet.
     return sendBulkWritePacket(params, paramBlockLength);
 }
 
@@ -772,7 +757,6 @@ bool DynamixelLL::sendBulkWritePacket(const uint8_t* parameters, uint16_t parame
     packet[idx++] = crc & 0xFF;          // CRC LSB
     packet[idx++] = (crc >> 8) & 0xFF;     // CRC MSB
 
-    // Optionally, print packet for debugging:
     if (_debug)
     {
         Serial.print("Bulk Write Packet: ");
@@ -787,7 +771,6 @@ bool DynamixelLL::sendBulkWritePacket(const uint8_t* parameters, uint16_t parame
         Serial.println();
     }
 
-    // Send the assembled packet.
     return sendRawPacket(packet, packetSize);
 }
 
@@ -841,7 +824,6 @@ bool DynamixelLL::sendBulkReadPacket(const uint8_t* ids, uint16_t* addresses, ui
     packet[idx++] = crc & 0xFF;       // CRC LSB
     packet[idx++] = (crc >> 8) & 0xFF;  // CRC MSB
 
-    // Optionally, print packet for debugging.
     if (_debug)
     {
         Serial.print("Bulk Read Packet: ");
@@ -856,7 +838,6 @@ bool DynamixelLL::sendBulkReadPacket(const uint8_t* ids, uint16_t* addresses, ui
         Serial.println();
     }
 
-    // Send the assembled packet.
     return sendRawPacket(packet, packetSize);
 }
 
@@ -887,7 +868,6 @@ uint8_t DynamixelLL::bulkRead(const uint8_t* ids, uint16_t* addresses, uint8_t* 
             }
             retError = response.error;
         }
-        // Convert the little-endian data bytes into a 32-bit value.
         values[i] = 0;
         for (uint8_t j = 0; j < response.dataLength; j++)
             values[i] |= (response.data[j] << (8 * j));
@@ -904,12 +884,11 @@ uint8_t DynamixelLL::bulkRead(const uint8_t* ids, uint16_t* addresses, uint8_t* 
 
 uint8_t DynamixelLL::setOperatingMode(uint8_t mode)
 {
-    // Allowed: 1 = Velocity, 3 = Position, 4 = Extended Position, 16 = PWM.
     if (!(mode == 1 || mode == 3 || mode == 4 || mode == 16))
     {
         if (_debug)
                 Serial.print("Error: Unsupported operating mode.");
-        return 1; // error: unsupported mode is provided
+        return 1;
     }
 
     uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
@@ -934,7 +913,7 @@ uint8_t DynamixelLL::setHomingOffset(int32_t offset)
 
     uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
     for(uint8_t i = 0; i < _numMotors; i++)
-        buffer[i] = static_cast<uint32_t>(offset); // Convert to uint32_t for writing to register.
+        buffer[i] = static_cast<uint32_t>(offset);
     return writeRegister(20, buffer, 4); // EEPROM address 11, 1 byte
 }
 
@@ -956,15 +935,13 @@ uint8_t DynamixelLL::setHomingOffset_A(float offsetAngle)
 
     uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
     for(uint8_t i = 0; i < _numMotors; i++)
-        buffer[i] = static_cast<uint32_t>(offset); // Convert to uint32_t for writing to register.
+        buffer[i] = static_cast<uint32_t>(offset);
     return writeRegister(20, buffer, 4); // EEPROM address 11, 1 byte
 }
 
 
 uint8_t DynamixelLL::setGoalPosition_PCM(uint16_t goalPosition)
 {
-    // Note: The servo internally also limits the value;
-    // the main purpose of the clamping here is to aid debugging.
     if (goalPosition > 4005)
     {
         goalPosition = 4005;
@@ -1013,7 +990,7 @@ uint8_t DynamixelLL::setGoalPosition_EPCM(int32_t extendedPosition)
 
     uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
     for(uint8_t i = 0; i < _numMotors; i++)
-        buffer[i] = static_cast<uint32_t>(extendedPosition); // Convert to uint32_t for writing to register.
+        buffer[i] = static_cast<uint32_t>(extendedPosition);
     return writeRegister(116, buffer, 4); // RAM address 116, 4 bytes
 }
 
@@ -1038,12 +1015,11 @@ uint8_t DynamixelLL::setLED(bool enable)
 
 uint8_t DynamixelLL::setStatusReturnLevel(uint8_t level)
 {
-    // Valid status return levels are 0, 1, or 2.
     if (level > 2)
     {
         if (_debug)
             Serial.println("Error: Invalid status return level. Allowed values: 0, 1, or 2.");
-        return 1; // Error code for invalid status return level.
+        return 1;
     }
 
     uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
@@ -1055,12 +1031,11 @@ uint8_t DynamixelLL::setStatusReturnLevel(uint8_t level)
 
 uint8_t DynamixelLL::setID(uint8_t newID)
 {
-    // Valid IDs are 0 to 253; 254 is reserved for Broadcast.
     if (newID > 253)
     {
         if (_debug)
             Serial.println("Error: Invalid ID. Valid IDs are 0 to 253.");
-        return 1; // Error code for invalid ID.
+        return 1;
     }
 
     uint32_t buffer[_numMotors]; // a temporary buffer to hold the value for each motor
@@ -1227,7 +1202,7 @@ uint8_t DynamixelLL::getPresentPosition(int32_t &presentPosition)
             Serial.println(error, HEX);
         }
     } else
-        presentPosition = static_cast<int32_t>(temp); // Convert to int32_t for output.
+        presentPosition = static_cast<int32_t>(temp);
     return error;
 }
 
@@ -1266,7 +1241,6 @@ MovingStatus DynamixelLL::getMovingStatus()
             Serial.print("Error reading Moving Status, error code: ");
             Serial.println(error, HEX);
         }
-        // Return the default status if a read error occurs.
         return status;
     }
 

@@ -4,13 +4,14 @@
 DynamixelLL dxl(Serial2, 0); 
 
 // Motor IDs for the two motors.
-const uint8_t motorIDs[] = {10, 11};
+const uint8_t motorIDs[] = {114, 115};
 const uint8_t numMotors = sizeof(motorIDs) / sizeof(motorIDs[0]);
 
 // Arrays for positions, statuses, and LED settings.
-float homingOffset[numMotors];
+int32_t homingOffset[numMotors];
 uint16_t positions[numMotors];
 int32_t getpositions[numMotors];
+int16_t getLoads[numMotors];
 bool setLED[numMotors];
 
 // Create individual motor objects for setup (if needed for individual writes).
@@ -26,10 +27,12 @@ void setup() {
   dxl.begin(57600);
 
   // Initialize a known present position for troubleshooting.
-  homingOffset[0] = -10.0f;
-  homingOffset[1] = 60.0f;
+  homingOffset[0] = 500;
+  homingOffset[1] = 1500;
   getpositions[0] = 0;
   getpositions[1] = 0;
+  getLoads[0] = 0;
+  getLoads[1] = 0;
 
   // Enable sync mode for multiple motor control.
   dxl.enableSync(motorIDs, numMotors);
@@ -42,7 +45,7 @@ void setup() {
   dxl.setOperatingMode(3);
 
   // Set Homing Offset for each motor:
-  dxl.setHomingOffset_A(homingOffset);
+  dxl.setHomingOffset(homingOffset);
 
   // Enable torque for both motors.
   dxl.setTorqueEnable(true);
@@ -74,10 +77,18 @@ void loop() {
   dxl.setGoalPosition_PCM(positions);
   dxl.setLED(setLED);
   Serial.println("\nInitial Position sent to motors\n");
-  delay(3000);
+  delay(500);
+
+  dxl.getCurrentLoad(getLoads);
+  Serial.print("Initial Load of the first motor: ");
+  Serial.println(getLoads[0]);
+  Serial.print("Initial Load of the second motor: ");
+  Serial.println(getLoads[1]);
+  delay(2500);
 
   // Read and show present position from the both motors.
   dxl.getPresentPosition(getpositions);
+  
   Serial.print("Initial Position of the first motor: ");
   Serial.println(getpositions[0]);
   Serial.print("Initial Position of the second motor: ");
@@ -92,7 +103,14 @@ void loop() {
   dxl.setLED(setLED);
 
   Serial.println("\nFinal Position sent to motors");
-  delay(3000);
+  delay(500);
+
+  dxl.getCurrentLoad(getLoads);
+  Serial.print("Final Load of the first motor: ");
+  Serial.println(getLoads[0]);
+  Serial.print("Final Load of the second motor: ");
+  Serial.println(getLoads[1]);
+  delay(2500);
 
   dxl.getPresentPosition(getpositions);
   Serial.print("Final Position of the first motor: ");

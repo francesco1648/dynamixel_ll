@@ -4,19 +4,17 @@
 template <uint8_t N>
 uint8_t DynamixelLL::setOperatingMode(const uint8_t (&modes)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedModes[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
     { 
-        // Allowed: 1 = Velocity, 3 = Position, 4 = Extended Position, 16 = PWM.
         if (!(modes[i] == 1 || modes[i] == 3 || modes[i] == 4 || modes[i] == 16))
         {
             if (_debug)
                 Serial.print("Error: Unsupported operating mode.");
-            return 1; // error: unsupported mode is provided
+            return 1;
         }
         processedModes[i] = modes[i];
     }
@@ -27,9 +25,8 @@ uint8_t DynamixelLL::setOperatingMode(const uint8_t (&modes)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setHomingOffset(const int32_t (&offset)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t offsetArray[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -53,9 +50,8 @@ uint8_t DynamixelLL::setHomingOffset(const int32_t (&offset)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setHomingOffset_A(const float (&offsetAngle)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     int32_t offsetPulse[_numMotors];
     uint32_t offsetArray[_numMotors];
@@ -73,7 +69,7 @@ uint8_t DynamixelLL::setHomingOffset_A(const float (&offsetAngle)[N])
             if (_debug)
                 Serial.println("Warning: Homing offset clamped to -1044479.");
         } else
-            offsetArray[i] = offsetPulse[i]; // implicitly convert to uint32_t
+            offsetArray[i] = static_cast<uint32_t>(offsetPulse[i]);
     }
     return writeRegister(20, offsetArray, 4); // RAM address 20, 4 bytes
 }
@@ -82,17 +78,14 @@ uint8_t DynamixelLL::setHomingOffset_A(const float (&offsetAngle)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setGoalPosition_PCM(const uint16_t (&goalPositions)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedPositions[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
     {
         processedPositions[i] = goalPositions[i];
 
-        // Note: The servo internally also limits the value;
-        // the main purpose of the clamping here is to aid debugging.
         if (processedPositions[i] > 4095) {
             processedPositions[i] = 4095;
             if (_debug)
@@ -106,9 +99,8 @@ uint8_t DynamixelLL::setGoalPosition_PCM(const uint16_t (&goalPositions)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setGoalPosition_A_PCM(const float (&angleDegrees)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedPositions[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -128,9 +120,8 @@ uint8_t DynamixelLL::setGoalPosition_A_PCM(const float (&angleDegrees)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setGoalPosition_EPCM(const int32_t (&extendedPositions)[N])
 {
-    // Check if N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedPositions[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -146,7 +137,7 @@ uint8_t DynamixelLL::setGoalPosition_EPCM(const int32_t (&extendedPositions)[N])
             if (_debug)
                 Serial.println("Warning: Extended position clamped to -1048575.");
         } else
-            processedPositions[i] = extendedPositions[i]; // Implicitly convert to uint32_t
+            processedPositions[i] = static_cast<uint32_t>(extendedPositions[i]);
     }
     return writeRegister(116, processedPositions, 4); // RAM address 116, 4 bytes
 }
@@ -155,9 +146,8 @@ uint8_t DynamixelLL::setGoalPosition_EPCM(const int32_t (&extendedPositions)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setTorqueEnable(const bool (&enable)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedValues[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -169,9 +159,8 @@ uint8_t DynamixelLL::setTorqueEnable(const bool (&enable)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setLED(const bool (&enable)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedValues[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -183,19 +172,17 @@ uint8_t DynamixelLL::setLED(const bool (&enable)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setStatusReturnLevel(const uint8_t (&levels)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedLevels[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
     {
-        // Valid status return levels are 0, 1, or 2.
         if (levels[i] > 2)
         {
             if (_debug)
                 Serial.println("Error: Invalid status return level. Allowed values: 0, 1, or 2.");
-            return 1; // Error code for invalid status return level.
+            return 1;
         }
         processedLevels[i] = levels[i];
     }
@@ -206,19 +193,17 @@ uint8_t DynamixelLL::setStatusReturnLevel(const uint8_t (&levels)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setID(const uint8_t (&newIDs)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedIDs[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
     {
-        // Valid IDs are 0 to 253; 254 is reserved for Broadcast.
         if (newIDs[i] > 253)
         {
             if (_debug)
                 Serial.println("Error: Invalid ID. Valid IDs are 0 to 253.");
-            return 1; // Error code for invalid ID.
+            return 1;
         }
         processedIDs[i] = newIDs[i];
     }
@@ -229,9 +214,8 @@ uint8_t DynamixelLL::setID(const uint8_t (&newIDs)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setBaudRate(const uint8_t (&baudRates)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedBaudRates[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -268,9 +252,8 @@ uint8_t DynamixelLL::setBaudRate(const uint8_t (&baudRates)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setReturnDelayTime(const uint8_t (&delayTime)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedDelayTime[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -293,9 +276,8 @@ uint8_t DynamixelLL::setDriveMode(const bool (&torqueOnByGoalUpdate)[N],
                                   const bool (&timeBasedProfile)[N],
                                   const bool (&reverseMode)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedDriveModes[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -316,9 +298,8 @@ uint8_t DynamixelLL::setDriveMode(const bool (&torqueOnByGoalUpdate)[N],
 template <uint8_t N>
 uint8_t DynamixelLL::setProfileVelocity(const uint32_t (&profileVelocity)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedProfileVelocity[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -352,9 +333,8 @@ uint8_t DynamixelLL::setProfileVelocity(const uint32_t (&profileVelocity)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::setProfileAcceleration(const uint32_t (&profileAcceleration)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
 
     uint32_t processedProfileAcceleration[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
@@ -406,9 +386,8 @@ uint8_t DynamixelLL::setProfileAcceleration(const uint32_t (&profileAcceleration
 template <uint8_t N>
 uint8_t DynamixelLL::getPresentPosition(int32_t (&presentPositions)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
     
     uint32_t temp[_numMotors];
     uint8_t error = syncRead(132, 4, _motorIDs, temp, _numMotors); // RAM address 132, 4 bytes
@@ -431,9 +410,8 @@ uint8_t DynamixelLL::getPresentPosition(int32_t (&presentPositions)[N])
 template <uint8_t N>
 uint8_t DynamixelLL::getCurrentLoad(int16_t (&currentLoad)[N])
 {
-    // Check if array size N matches the expected number of motors
     if (checkArraySize(N) != 0)
-        return 1; // Propagate error code
+        return 1;
     
     uint32_t temp[_numMotors];
     uint8_t error = syncRead(126, 2, _motorIDs, temp, _numMotors); // RAM address 126, 2 bytes
