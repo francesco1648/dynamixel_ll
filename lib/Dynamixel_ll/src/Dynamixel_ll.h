@@ -17,6 +17,7 @@
  */
 struct StatusPacket {
     bool valid;         ///< True if the packet is valid.
+    uint8_t id;         ///< Servo ID that sent the response.
     uint8_t error;      ///< Error code from the response.
     uint8_t data[4];    ///< Data bytes (max 4 bytes).
     uint8_t dataLength; ///< Number of data bytes returned.

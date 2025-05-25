@@ -323,7 +323,7 @@ void DynamixelLL::sendPacket(const uint8_t *packet, uint8_t length)
 
 StatusPacket DynamixelLL::receivePacket()
 {
-    StatusPacket result = {false, 0, {0}, 0};
+    StatusPacket result = {false, 0, 0, {0}, 0};
 
     const uint8_t maxPacketSize = 64;         // Maximum allowed packet size.
     uint8_t buffer[maxPacketSize];           // Buffer for incoming bytes.
@@ -370,6 +370,7 @@ StatusPacket DynamixelLL::receivePacket()
             Serial.println("Timeout waiting for header extension");
         return result;
     }
+    result.id = buffer[headerStart + 4];
 
     // Step 3: Determine total packet length
     uint16_t lengthField = buffer[headerStart + 5] | (buffer[headerStart + 6] << 8); // LSB | MSB
@@ -418,7 +419,6 @@ StatusPacket DynamixelLL::receivePacket()
 
     // Read the CRC from the packet.
     uint16_t receivedCRC = buffer[headerStart + 9 + paramLength] | (buffer[headerStart + 10 + paramLength] << 8);
-    // Compute CRC over the complete packet excluding the 2 CRC bytes.
     uint16_t computedCRC = calculateCRC(&buffer[headerStart], 9 + paramLength);
     if (receivedCRC != computedCRC)
     {
@@ -664,26 +664,37 @@ uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_
     }
 
     uint8_t retError = 0;
-    // For each device, read its response.
     for (uint8_t i = 0; i < count; i++)
+        values[i] = 0;
+    // For each device, read its response.
+    uint8_t received = 0;
+    while (received < count)
     {
         StatusPacket response = receivePacket();
+        received++;
         if (!response.valid || response.error != 0)
         {
             if (_debug)
             {
                 Serial.print("Error in status packet from device ");
-                Serial.print(ids[i]);
+                Serial.print(response.id);
                 Serial.print(": 0x");
                 Serial.println(response.error, HEX);
             }
             retError = response.error;
+            continue;
         }
-        values[i] = 0;
-        for (uint8_t j = 0; j < response.dataLength; j++)
-            values[i] |= (response.data[j] << (8 * j));
+        // Find the index in the provided ids array that matches the response id.
+        for (uint8_t i = 0; i < count; i++)
+        {
+            if (ids[i] == response.id)
+            {
+                for (uint8_t j = 0; j < response.dataLength; j++)
+                    values[i] |= (response.data[j] << (8 * j));
+                break;
+            }
+        }
     }
-
     return retError;
 }
 
