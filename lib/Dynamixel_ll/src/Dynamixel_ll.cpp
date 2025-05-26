@@ -685,9 +685,11 @@ uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_
         StatusPacket response = receivePacket();
         received++;
         if (!response.valid)
+        {
             if (_debug)
                 Serial.println("Invalid status packet received.");
             continue;
+        }
         if (response.error != 0)
         {
             if (_debug)
