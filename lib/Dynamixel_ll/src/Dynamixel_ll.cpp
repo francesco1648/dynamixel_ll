@@ -229,11 +229,13 @@ uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t* value, uint8_t si
 
     // Receive and Process the Response
     StatusPacket response = receivePacket();
-    if (!response.valid || response.error != 0)
+    if (_debug)
     {
-        if (_debug)
+        if (!response.valid)
+            Serial.println("Invalid status packet received.");
+        if (response.error != 0)
         {
-            Serial.print("Response error: ");
+            Serial.print("Error in status packet: ");
             Serial.println(response.error, HEX);
         }
     }
@@ -282,11 +284,13 @@ uint8_t DynamixelLL::readRegister(uint16_t address, uint32_t &value, uint8_t siz
 
     // Receive and process the response.
     StatusPacket response = receivePacket();
-    if (!response.valid || response.error != 0)
+    if (_debug)
     {
-        if (_debug)
+        if (!response.valid)
+            Serial.println("Invalid status packet received.");
+        if (response.error != 0)
         {
-            Serial.print("Error in response: ");
+            Serial.print("Error in status packet: ");
             Serial.println(response.error, HEX);
         }
     }
@@ -672,7 +676,11 @@ uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_
     {
         StatusPacket response = receivePacket();
         received++;
-        if (!response.valid || response.error != 0)
+        if (!response.valid)
+            if (_debug)
+                Serial.println("Invalid status packet received.");
+            continue;
+        if (response.error != 0)
         {
             if (_debug)
             {
