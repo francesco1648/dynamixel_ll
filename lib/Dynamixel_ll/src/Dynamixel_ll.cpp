@@ -1,5 +1,5 @@
 #include "Dynamixel_ll.h"
-#define time_delay 10
+#define time_delay 0
 DynamixelLL::DynamixelLL(HardwareSerial &serial, uint8_t servoID)
     : _serial(serial), _servoID(servoID) {}
 
@@ -430,8 +430,8 @@ StatusPacket DynamixelLL::receivePacket()
     if (buffer[headerStart + 7] != 0x55) // Verify instruction (expecting 0x55 for a status packet)
     {
         if (_debug)
-            Serial.println("Invalid instruction; expected 0x55");
-        return result;
+            Serial.println("Invalid instruction; expected 0x55. Likely an echo; retrying..."); 
+        return receivePacket();
     }
     result.error = buffer[headerStart + 8];
     uint8_t paramLength = lengthField - 4;
