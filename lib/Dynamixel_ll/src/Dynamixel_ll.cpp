@@ -551,7 +551,7 @@ bool DynamixelLL::sendSyncWritePacket(const uint8_t* parameters, uint16_t parame
     // Total packet size:
     //   Header (4) + Packet ID (1) + Length (2) + Instruction (1) +
     //   Parameter Block (parametersLength) + CRC (2)
-    uint16_t packetSize = 10 + parametersLength;
+    uint8_t packetSize = 10 + parametersLength;
     uint8_t packet[packetSize];
     uint16_t idx = 0;
 
