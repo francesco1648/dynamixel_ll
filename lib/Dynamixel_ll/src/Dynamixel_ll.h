@@ -522,8 +522,9 @@ private:
      * @brief Sends a packet over the serial interface.
      * @param packet Pointer to the packet data.
      * @param length Length of the packet.
+     * @return bool True if sent successfully.
      */
-    void sendPacket(const uint8_t *packet, uint8_t length);
+    bool sendPacket(const uint8_t *packet, uint8_t length);
 
     /**
      * @brief Sends a synchronous write packet.
@@ -560,14 +561,6 @@ private:
      * @return bool True if sent successfully.
      */
     bool sendBulkReadPacket(const uint8_t* ids, uint16_t* addresses, uint8_t* dataLengths, uint8_t count);
-
-    /**
-     * @brief Sends a raw packet over the serial interface.
-     * @param packet Pointer to packet data.
-     * @param length Length of the packet.
-     * @return bool True if sent successfully.
-     */
-    bool sendRawPacket(const uint8_t* packet, uint16_t length);
 
     /**
      * @brief A helper function for template overloads. Checks if the array size matches the number of motors.

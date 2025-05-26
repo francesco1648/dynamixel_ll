@@ -224,7 +224,12 @@ uint8_t DynamixelLL::writeRegister(uint16_t address, uint32_t* value, uint8_t si
     packet[lenNoCRC + 1] = (crc >> 8) & 0xFF;    // Append CRC MSB.
 
     // Send the Packet
-    sendPacket(packet, lenNoCRC + 2);
+    if (!sendPacket(packet, lenNoCRC + 2))
+    {
+        if (_debug)
+            Serial.println("Error sending Write packet.");
+        return 1;
+    }
     delay(time_delay);
 
     // Receive and Process the Response
@@ -279,7 +284,12 @@ uint8_t DynamixelLL::readRegister(uint16_t address, uint32_t &value, uint8_t siz
     packet[13] = (crc >> 8) & 0xFF;
 
     // Transmit the packet.
-    sendPacket(packet, 14);
+    if (!sendPacket(packet, 14))
+    {
+        if (_debug)
+            Serial.println("Error sending Read packet.");
+        return 1;
+    }
     delay(time_delay);
 
     // Receive and process the response.
@@ -305,7 +315,7 @@ uint8_t DynamixelLL::readRegister(uint16_t address, uint32_t &value, uint8_t siz
 }
 
 
-void DynamixelLL::sendPacket(const uint8_t *packet, uint8_t length)
+bool DynamixelLL::sendPacket(const uint8_t *packet, uint8_t length)
 {
     if (_debug)
     {
@@ -320,9 +330,19 @@ void DynamixelLL::sendPacket(const uint8_t *packet, uint8_t length)
         }
         Serial.println();
     }
-    _serial.write(packet, length);
-}
+    // Clear any pending data from the serial input buffer.
+    while (_serial.available())
+        _serial.read();
 
+    // Write the entire packet in one go.
+    size_t bytesWritten = _serial.write(packet, length);
+
+    // Ensure that the transmission is complete.
+    _serial.flush();
+
+    // Check that the number of bytes written equals the packet length.
+    return (bytesWritten == length);
+}
 
 
 StatusPacket DynamixelLL::receivePacket()
@@ -464,8 +484,13 @@ uint8_t DynamixelLL::ping(uint32_t &value)
     packet[lenNoCRC]     = crc & 0xFF;         // CRC LSB
     packet[lenNoCRC + 1] = (crc >> 8) & 0xFF;    // CRC MSB
 
-    // Send the ping packet over the serial interface.
-    sendPacket(packet, lenNoCRC + 2);
+    // Send the ping packet over the serial interface.    
+    if (!sendPacket(packet, lenNoCRC + 2))
+    {
+        if (_debug)
+            Serial.println("Error sending Ping packet.");
+        return 1;
+    }
     delay(time_delay);
 
     // Receive the status packet in response (expecting a standard status packet).
@@ -569,24 +594,7 @@ bool DynamixelLL::sendSyncWritePacket(const uint8_t* parameters, uint16_t parame
         Serial.println();
     }
 
-    return sendRawPacket(packet, packetSize);
-}
-
-
-bool DynamixelLL::sendRawPacket(const uint8_t* packet, uint16_t length)
-{
-    // Clear any pending data from the serial input buffer.
-    while (_serial.available())
-        _serial.read();
-
-    // Write the entire packet in one go.
-    size_t bytesWritten = _serial.write(packet, length);
-
-    // Ensure that the transmission is complete.
-    _serial.flush();
-
-    // Check that the number of bytes written equals the packet length.
-    return (bytesWritten == length);
+    return sendPacket(packet, packetSize);
 }
 
 
@@ -653,7 +661,7 @@ bool DynamixelLL::sendSyncReadPacket(uint16_t address, uint8_t dataLength, const
         Serial.println();
     }
 
-    return sendRawPacket(packet, packetSize);
+    return sendPacket(packet, packetSize);
 }
 
 
@@ -790,7 +798,7 @@ bool DynamixelLL::sendBulkWritePacket(const uint8_t* parameters, uint16_t parame
         Serial.println();
     }
 
-    return sendRawPacket(packet, packetSize);
+    return sendPacket(packet, packetSize);
 }
 
 
@@ -857,7 +865,7 @@ bool DynamixelLL::sendBulkReadPacket(const uint8_t* ids, uint16_t* addresses, ui
         Serial.println();
     }
 
-    return sendRawPacket(packet, packetSize);
+    return sendPacket(packet, packetSize);
 }
 
 
