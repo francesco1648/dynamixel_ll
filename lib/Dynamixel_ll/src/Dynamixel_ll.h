@@ -442,6 +442,12 @@ public:
      */
     uint8_t factoryReset(uint8_t level);
 
+    /**
+     * @brief Sends a reboot instruction to the Dynamixel servo.
+     * @return uint8_t 0 on success, or a nonzero error code if a problem occurs.
+     */
+    uint8_t reboot();
+    
 private:
     HardwareSerial &_serial;        ///< Reference to the serial interface.
     uint8_t _servoID;               ///< Servo ID.

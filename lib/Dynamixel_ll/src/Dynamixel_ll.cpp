@@ -965,6 +965,64 @@ uint8_t DynamixelLL::factoryReset(uint8_t level)
 }
 
 
+uint8_t DynamixelLL::reboot()
+{
+    // length: Instruction (1) + CRC(2) = 3.
+    uint16_t length = 3;
+
+    // Allocate the packet buffer.
+    // Total packet size = Header (4) + ID (1) + Length (2) + Instruction (1) +
+    //                      CRC (2) = 10.
+    uint8_t packet[10];
+
+    // Construct the Packet Header
+    packet[0] = 0xFF;
+    packet[1] = 0xFF;
+    packet[2] = 0xFD;
+    packet[3] = 0x00;
+
+    // Set Packet ID
+    packet[4] = _servoID;
+
+    // Insert the Length field (little-endian)
+    packet[5] = length & 0xFF;
+    packet[6] = (length >> 8) & 0xFF;
+
+    // Set the Instruction byte: Reboot (0x08)
+    packet[7] = 0x08;
+
+    // Compute and Append the CRC
+    uint8_t lenNoCRC = 8; // the packet length excluding the CRC field.
+    uint16_t crc = calculateCRC(packet, lenNoCRC);
+    packet[lenNoCRC]     = crc & 0xFF;         // Append CRC LSB.
+    packet[lenNoCRC + 1] = (crc >> 8) & 0xFF;    // Append CRC MSB.
+
+    // Send the Packet
+    if (!sendPacket(packet, lenNoCRC + 2))
+    {
+        if (_debug)
+            Serial.println("Error sending Factory Reset packet.");
+        return 1;
+    }
+    delay(time_delay);
+
+    // Receive and Process the Response
+    StatusPacket response = receivePacket();
+    if (_debug)
+    {
+        if (!response.valid)
+            Serial.println("Invalid status packet received.");
+        if (response.error != 0)
+        {
+            Serial.print("Error in status packet: ");
+            Serial.println(response.error, HEX);
+        }
+    }
+
+    return response.error;
+}
+
+
 // ===============================
 // ==  Control Table Functions  ==
 // ===============================

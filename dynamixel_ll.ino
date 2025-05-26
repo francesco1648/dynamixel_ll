@@ -39,10 +39,14 @@ void setup() {
   motor2.setDebug(true);
   dxl.setDebug(true);
 
-  // Factory Reset
+  // Factory Reset and Reboot
   motor1.factoryReset(0x02);
   delay(2000);
+  motor1.reboot();
+  delay(2000);
   motor2.factoryReset(0x02);
+  delay(2000);
+  motor2.reboot();
   delay(2000);
 
   // Enable sync mode for multiple motor control.
