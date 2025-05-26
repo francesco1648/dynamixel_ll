@@ -34,6 +34,17 @@ void setup() {
   getLoads[0] = 0;
   getLoads[1] = 0;
 
+  // Enable or disable debug mode for troubleshooting
+  motor1.setDebug(true);
+  motor2.setDebug(true);
+  dxl.setDebug(true);
+
+  // Factory Reset
+  motor1.factoryReset(0x02);
+  delay(2000);
+  motor2.factoryReset(0x02);
+  delay(2000);
+
   // Enable sync mode for multiple motor control.
   dxl.enableSync(motorIDs, numMotors);
 
@@ -49,11 +60,6 @@ void setup() {
 
   // Enable torque for both motors.
   dxl.setTorqueEnable(true);
-
-  // Enable or disable debug mode for troubleshooting
-  motor1.setDebug(true);
-  motor2.setDebug(true);
-  dxl.setDebug(true);
 
   // Set Profile Velocity and Profile Acceleration for smooth motion.
   motor1.setProfileVelocity(400);

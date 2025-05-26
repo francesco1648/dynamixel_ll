@@ -428,6 +428,20 @@ public:
      */
     uint8_t ping(uint32_t &value);
 
+    /**
+     * @brief Sends a factory reset instruction to the Dynamixel servo.
+     * Factory reset can be performed at different levels:
+     * 
+     * 0xFF : Reset all
+     * 
+     * 0x01 : Reset all except ID
+     * 
+     * 0x02 : Reset all except ID and Baudrate
+     * @param level Factory reset level (0xFF, 0x01, or 0x02).
+     * @return uint8_t 0 on success, or a nonzero error code if a problem occurs.
+     */
+    uint8_t factoryReset(uint8_t level);
+
 private:
     HardwareSerial &_serial;        ///< Reference to the serial interface.
     uint8_t _servoID;               ///< Servo ID.
