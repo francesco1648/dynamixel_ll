@@ -18,7 +18,7 @@ uint8_t DynamixelLL::setOperatingMode(const uint8_t (&modes)[N])
         }
         processedModes[i] = modes[i];
     }
-    return writeRegister(11, processedModes, 1); // EEPROM address 11, 1 byte
+    return syncWrite(11, 1, _motorIDs, processedModes, _numMotors); // EEPROM address 11, 1 byte
 }
 
 
@@ -43,7 +43,7 @@ uint8_t DynamixelLL::setHomingOffset(const int32_t (&offset)[N])
         } else
             offsetArray[i] = offset[i];
     }
-    return writeRegister(20, offsetArray, 4); // RAM address 20, 4 bytes
+    return syncWrite(20, 4, _motorIDs, offsetArray, _numMotors); // RAM address 20, 4 bytes
 }
 
 
@@ -71,7 +71,7 @@ uint8_t DynamixelLL::setHomingOffset_A(const float (&offsetAngle)[N])
         } else
             offsetArray[i] = static_cast<uint32_t>(offsetPulse[i]);
     }
-    return writeRegister(20, offsetArray, 4); // RAM address 20, 4 bytes
+    return syncWrite(20, 4, _motorIDs, offsetArray, _numMotors); // RAM address 20, 4 bytes
 }
 
 
@@ -92,7 +92,7 @@ uint8_t DynamixelLL::setGoalPosition_PCM(const uint16_t (&goalPositions)[N])
                 Serial.println("Warning: Goal position clamped to 4095.");
         }
     }
-    return writeRegister(116, processedPositions, 4); // RAM address 116, 4 bytes
+    return syncWrite(116, 4, _motorIDs, processedPositions, _numMotors); // RAM address 116, 4 bytes
 }
 
 
@@ -113,7 +113,7 @@ uint8_t DynamixelLL::setGoalPosition_A_PCM(const float (&angleDegrees)[N])
                 Serial.println("Warning: Angle conversion resulted in value exceeding 4095, clamped.");
         }
     }
-    return writeRegister(116, processedPositions, 4); // RAM address 116, 4 bytes
+    return syncWrite(116, 4, _motorIDs, processedPositions, _numMotors); // RAM address 116, 4 bytes
 }
 
 
@@ -139,7 +139,7 @@ uint8_t DynamixelLL::setGoalPosition_EPCM(const int32_t (&extendedPositions)[N])
         } else
             processedPositions[i] = static_cast<uint32_t>(extendedPositions[i]);
     }
-    return writeRegister(116, processedPositions, 4); // RAM address 116, 4 bytes
+    return syncWrite(116, 4, _motorIDs, processedPositions, _numMotors); // RAM address 116, 4 bytes
 }
 
 
@@ -152,7 +152,7 @@ uint8_t DynamixelLL::setTorqueEnable(const bool (&enable)[N])
     uint32_t processedValues[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
         processedValues[i] = enable[i] ? 1 : 0;
-    return writeRegister(64, processedValues, 1); // RAM address 64, 1 byte
+    return syncWrite(64, 1, _motorIDs, processedValues, _numMotors); // RAM address 64, 1 byte
 }
 
 
@@ -165,7 +165,7 @@ uint8_t DynamixelLL::setLED(const bool (&enable)[N])
     uint32_t processedValues[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
         processedValues[i] = enable[i] ? 1 : 0;
-    return writeRegister(65, processedValues, 1); // RAM address 65, 1 byte
+    return syncWrite(65, 1, _motorIDs, processedValues, _numMotors); // RAM address 65, 1 byte
 }
 
 
@@ -186,7 +186,7 @@ uint8_t DynamixelLL::setStatusReturnLevel(const uint8_t (&levels)[N])
         }
         processedLevels[i] = levels[i];
     }
-    return writeRegister(68, processedLevels, 1); // RAM address 68, 1 byte
+    return syncWrite(68, 1, _motorIDs, processedLevels, _numMotors); // RAM address 68, 1 byte
 }
 
 
@@ -207,7 +207,7 @@ uint8_t DynamixelLL::setID(const uint8_t (&newIDs)[N])
         }
         processedIDs[i] = newIDs[i];
     }
-    return writeRegister(7, newIDs, 1); // EEPROM address 7, 1 byte
+    return syncWrite(7, 1, _motorIDs, newIDs, _numMotors); // EEPROM address 7, 1 byte
 }
 
 
@@ -245,7 +245,7 @@ uint8_t DynamixelLL::setBaudRate(const uint8_t (&baudRates)[N])
         }
         processedBaudRates[i] = baudRates[i];
     }
-    return writeRegister(8, processedBaudRates, 1); // EEPROM address 8, 1 byte
+    return syncWrite(8, 1, _motorIDs, processedBaudRates, _numMotors); // EEPROM address 8, 1 byte
 }
 
 
@@ -267,7 +267,7 @@ uint8_t DynamixelLL::setReturnDelayTime(const uint8_t (&delayTime)[N])
                 Serial.println("Warning: setReturnDelayTime clamped to 254.");
         }
     }
-    return writeRegister(9, processedDelayTime, 1); // EEPROM address 9, 1 byte
+    return syncWrite(9, 1, _motorIDs, processedDelayTime, _numMotors); // EEPROM address 9, 1 byte
 }
 
 
@@ -291,7 +291,7 @@ uint8_t DynamixelLL::setDriveMode(const bool (&torqueOnByGoalUpdate)[N],
             mode |= 0x01; // Set Bit 0.
         processedDriveModes[i] = mode;
     }
-    return writeRegister(10, processedDriveModes, 1); // EEPROM address 10, 1 byte
+    return syncWrite(10, 1, _motorIDs, processedDriveModes, _numMotors); // EEPROM address 10, 1 byte
 }
 
 
@@ -326,7 +326,7 @@ uint8_t DynamixelLL::setProfileVelocity(const uint32_t (&profileVelocity)[N])
         } else
             processedProfileVelocity[i] = profileVelocity[i];
     }
-    return writeRegister(112, processedProfileVelocity, 4); // RAM address 112, 4 bytes
+    return syncWrite(112, 4, _motorIDs, processedProfileVelocity, _numMotors); // RAM address 112, 4 bytes
 }
 
 
@@ -379,7 +379,7 @@ uint8_t DynamixelLL::setProfileAcceleration(const uint32_t (&profileAcceleration
         } else
             processedProfileAcceleration[i] = profileAcceleration[i];
     }
-    return writeRegister(108, processedProfileAcceleration, 4); // RAM address 108, 4 bytes
+    return syncWrite(118, 4, _motorIDs, processedProfileAcceleration, _numMotors); // RAM address 108, 4 bytes
 }
 
 

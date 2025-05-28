@@ -480,10 +480,9 @@ private:
      * @param address Register address.
      * @param value Value to write.
      * @param size Number of bytes to write.
-     * @param sizeResponse (Optional) Expected response length.
      * @return uint8_t 0 on success.
      */
-    uint8_t writeRegister(uint16_t address, uint32_t* value, uint8_t size, uint8_t sizeResponse = 11);
+    uint8_t writeRegister(uint16_t address, uint32_t value, uint8_t size);
 
     /**
      * @brief Reads a register from the servo.
