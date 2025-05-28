@@ -429,3 +429,40 @@ uint8_t DynamixelLL::getCurrentLoad(int16_t (&currentLoad)[N])
     }
     return error;
 }
+
+template <uint8_t N>
+uint8_t DynamixelLL::getMovingStatus(MovingStatus (&status)[N])
+{
+    if (checkArraySize(N) != 0)
+        return 1;
+    
+    uint32_t temp[_numMotors];
+    uint8_t error = syncRead(123, 1, _motorIDs, temp, _numMotors); // RAM address 123, 1 byte
+    if (error != 0)
+    {
+        if (_debug)
+        {
+            Serial.print("Error reading Moving Status: ");
+            Serial.println(error);
+        }
+    } else
+    {
+        for (uint8_t i = 0; i < _numMotors; i++)
+        {
+            // Extract the status byte (LSB) from the 4-byte value.
+            status[i].raw = temp[i] & 0xFF;
+
+            // Decode bits 5 & 4 for Velocity Profile Type.
+            uint8_t profileBits = (status[i].raw >> 4) & 0x03;
+            status[i].profileType = static_cast<VelocityProfileType>(profileBits);
+
+            // Decode bit 3 for Following Error.
+            status[i].followingError = ((status[i].raw >> 3) & 0x01) != 0;
+            // Decode bit 1 to check if a motion profile is ongoing.
+            status[i].profileOngoing = ((status[i].raw >> 1) & 0x01) != 0;
+            // Decode bit 0 to determine if target position is reached.
+            status[i].inPosition = (status[i].raw & 0x01) != 0;
+        }
+    }
+    return error;
+}

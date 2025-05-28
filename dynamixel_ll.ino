@@ -13,6 +13,7 @@ uint16_t positions[numMotors];
 int32_t getpositions[numMotors];
 int16_t getLoads[numMotors];
 bool setLED[numMotors];
+MovingStatus status;
 
 // Create individual motor objects for setup (if needed for individual writes).
 DynamixelLL motor1(Serial2, motorIDs[0]);
@@ -129,7 +130,7 @@ void loop() {
   Serial.println(getpositions[1]);
 
   // Read and display the moving status of the first motor.
-  MovingStatus status = motor1.getMovingStatus();
+  motor1.getMovingStatus(status);
   Serial.print("Profile Type: ");
   switch(status.profileType) {
       case TRAPEZOIDAL: Serial.println("Trapezoidal"); break;

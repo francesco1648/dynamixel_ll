@@ -416,9 +416,19 @@ public:
 
     /**
      * @brief Gets the moving status of the servo.
-     * @return MovingStatus Status information.
+     * @param status Reference to store the moving status information.
+     * @return uint8_t 0 on success, nonzero on error.
      */
-    MovingStatus getMovingStatus();
+    uint8_t getMovingStatus(MovingStatus &status);
+
+    /**
+     * @brief Gets the moving status of the servo for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param status Array to store the moving status information for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t getMovingStatus(MovingStatus (&status)[N]);
 
     /**
      * @brief Sends a ping instruction to the Dynamixel servo.

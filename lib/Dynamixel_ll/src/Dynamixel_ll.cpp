@@ -1330,12 +1330,8 @@ uint8_t DynamixelLL::getCurrentLoad(int16_t &currentLoad)
 }
 
 
-MovingStatus DynamixelLL::getMovingStatus()
+uint8_t DynamixelLL::getMovingStatus(MovingStatus &status)
 {
-    MovingStatus status;
-    // Initialize status with default raw value.
-    status.raw = 0;
-
     uint32_t temp = 0;
     // Read 1 byte from register 123 (stored in a 4-byte variable) from RAM.
     uint8_t error = readRegister(123, temp, 1);
@@ -1346,22 +1342,20 @@ MovingStatus DynamixelLL::getMovingStatus()
             Serial.print("Error reading Moving Status, error code: ");
             Serial.println(error, HEX);
         }
-        return status;
+    } else {
+        // Extract the status byte (LSB) from the 4-byte value.
+        status.raw = temp & 0xFF;
+
+        // Decode bits 5 & 4 for Velocity Profile Type.
+        uint8_t profileBits = (status.raw >> 4) & 0x03;
+        status.profileType = static_cast<VelocityProfileType>(profileBits);
+
+        // Decode bit 3 for Following Error.
+        status.followingError = ((status.raw >> 3) & 0x01) != 0;
+        // Decode bit 1 to check if a motion profile is ongoing.
+        status.profileOngoing = ((status.raw >> 1) & 0x01) != 0;
+        // Decode bit 0 to determine if target position is reached.
+        status.inPosition = (status.raw & 0x01) != 0;
     }
-
-    // Extract the status byte (LSB) from the 4-byte value.
-    status.raw = temp & 0xFF;
-
-    // Decode bits 5 & 4 for Velocity Profile Type.
-    uint8_t profileBits = (status.raw >> 4) & 0x03;
-    status.profileType = static_cast<VelocityProfileType>(profileBits);
-
-    // Decode bit 3 for Following Error.
-    status.followingError = ((status.raw >> 3) & 0x01) != 0;
-    // Decode bit 1 to check if a motion profile is ongoing.
-    status.profileOngoing = ((status.raw >> 1) & 0x01) != 0;
-    // Decode bit 0 to determine if target position is reached.
-    status.inPosition = (status.raw & 0x01) != 0;
-
-    return status;
+    return error;
 }
