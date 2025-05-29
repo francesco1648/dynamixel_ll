@@ -496,12 +496,14 @@ private:
 
     /**
      * @brief Reads a register from the servo.
+     * @tparam T Type of the value to read (e.g., uint8_t, uint16_t, uint32_t).
      * @param address Register address.
      * @param value Reference to store the read value.
      * @param size Number of bytes to read.
      * @return uint8_t 0 on success.
      */
-    uint8_t readRegister(uint16_t address, uint32_t &value, uint8_t size);
+    template <typename T>
+    uint8_t readRegister(uint16_t address, T &value, uint8_t size);
 
     /**
      * @brief Performs a synchronous write to multiple devices.
@@ -516,6 +518,7 @@ private:
 
     /**
      * @brief Performs a synchronous read from multiple devices.
+     * @tparam T Type of the value to read (e.g., uint8_t, uint16_t, uint32_t).
      * @param address Starting register address.
      * @param dataLength Number of bytes to read per device.
      * @param ids Array of device IDs.
@@ -523,7 +526,8 @@ private:
      * @param count Number of devices.
      * @return uint8_t 0 if all responses are received successfully.
      */
-    uint8_t syncRead(uint16_t address, uint8_t dataLength, const uint8_t* ids, uint32_t* values, uint8_t count);
+    template <typename T>
+    uint8_t syncRead(uint16_t address, uint8_t dataLength, const uint8_t* ids, T(*values), uint8_t count);
 
     /**
      * @brief Performs a bulk write to multiple devices.

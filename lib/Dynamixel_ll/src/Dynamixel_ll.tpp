@@ -1,4 +1,123 @@
 #pragma once
+#define time_delay 0
+
+template <typename T>
+uint8_t DynamixelLL::readRegister(uint16_t address, T &value, uint8_t size)
+{
+    // Build a 14-byte READ instruction packet:
+    // [Header (4) | Servo ID (1) | Length (2) | Instruction (1) | Parameters (4) | CRC (2)]
+    uint8_t packet[14];
+    uint16_t length = 7;  // Parameter bytes (4) + Instruction (1) + CRC (2)
+
+    // Header (4 bytes):
+    packet[0] = 0xFF;
+    packet[1] = 0xFF;
+    packet[2] = 0xFD;
+    packet[3] = 0x00;
+
+    // Servo ID (1 byte):
+    packet[4] = _servoID;
+
+    // Length field (2 bytes, little-endian):
+    packet[5] = length & 0xFF;
+    packet[6] = (length >> 8) & 0xFF;
+
+    // Instruction (1 byte): READ (0x02)
+    packet[7] = 0x02;
+
+    // Parameters (4 bytes): starting address and data length (each in little-endian)
+    packet[8] = address & 0xFF;
+    packet[9] = (address >> 8) & 0xFF;
+    packet[10] = size & 0xFF;
+    packet[11] = (size >> 8) & 0xFF;
+
+    // Compute and append CRC (over the first 12 bytes)
+    uint16_t crc = calculateCRC(packet, 12);
+    packet[12] = crc & 0xFF;
+    packet[13] = (crc >> 8) & 0xFF;
+
+    // Transmit the packet.
+    if (!sendPacket(packet, 14))
+    {
+        if (_debug)
+            Serial.println("Error sending Read packet.");
+        return 1;
+    }
+    delay(time_delay);
+
+    // Receive and process the response.
+    StatusPacket response = receivePacket();
+    if (_debug)
+    {
+        if (!response.valid)
+            Serial.println("Invalid status packet received.");
+        if (response.error != 0)
+        {
+            Serial.print("Error in status packet: ");
+            Serial.println(response.error, HEX);
+        }
+    }
+
+    value = 0;
+    for (uint8_t i = 0; i < response.dataLength; i++)
+        value |= (response.data[i] << (8 * i));
+
+    delay(time_delay);
+    return response.error;
+}
+
+
+template <typename T>
+uint8_t DynamixelLL::syncRead(uint16_t address, uint8_t dataLength, const uint8_t* ids, T* values, uint8_t count)
+{
+    // Send Sync Read Instruction Packet.
+    if (!sendSyncReadPacket(address, dataLength, ids, count))
+    {
+        if (_debug)
+            Serial.println("Error sending Sync Read packet.");
+        return 1;
+    }
+
+    uint8_t retError = 0;
+    for (uint8_t i = 0; i < count; i++)
+        values[i] = 0;
+    // For each device, read its response.
+    uint8_t received = 0;
+    while (received < count)
+    {
+        StatusPacket response = receivePacket();
+        received++;
+        if (!response.valid)
+        {
+            if (_debug)
+                Serial.println("Invalid status packet received.");
+            continue;
+        }
+        if (response.error != 0)
+        {
+            if (_debug)
+            {
+                Serial.print("Error in status packet from device ");
+                Serial.print(response.id);
+                Serial.print(": 0x");
+                Serial.println(response.error, HEX);
+            }
+            retError = response.error;
+            continue;
+        }
+        // Find the index in the provided ids array that matches the response id.
+        for (uint8_t i = 0; i < count; i++)
+        {
+            if (ids[i] == response.id)
+            {
+                for (uint8_t j = 0; j < response.dataLength; j++)
+                    values[i] |= (response.data[j] << (8 * j));
+                break;
+            }
+        }
+    }
+    return retError;
+}
 
 
 template <uint8_t N>
@@ -304,9 +423,8 @@ uint8_t DynamixelLL::setProfileVelocity(const uint32_t (&profileVelocity)[N])
     uint32_t processedProfileVelocity[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
     {
-        uint32_t driveModeTemp = 0;
-        uint8_t error = readRegister(10, driveModeTemp, 1);
-        uint8_t driveMode = driveModeTemp & 0xFF;
+        uint8_t driveMode = 0;
+        uint8_t error = readRegister(10, driveMode, 1);
         // Bit 2 (0x04) set indicates time-based profile.
         bool timeBased = (error == 0) && ((driveMode & 0x04) != 0);
     
@@ -340,9 +458,8 @@ uint8_t DynamixelLL::setProfileAcceleration(const uint32_t (&profileAcceleration
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
     {
         // Read drive mode from register 10 to determine if a time-based profile is active.
-        uint32_t driveModeTemp = 0;
-        uint8_t error = readRegister(10, driveModeTemp, 1);
-        uint8_t driveMode = driveModeTemp & 0xFF;
+        uint8_t driveMode = 0;
+        uint8_t error = readRegister(10, driveMode, 1);
         bool timeBased = (error == 0) && ((driveMode & 0x04) != 0);
         
         // Choose the maximum allowed acceleration based on profile type.
@@ -389,8 +506,7 @@ uint8_t DynamixelLL::getPresentPosition(int32_t (&presentPositions)[N])
     if (checkArraySize(N) != 0)
         return 1;
     
-    uint32_t temp[_numMotors];
-    uint8_t error = syncRead(132, 4, _motorIDs, temp, _numMotors); // RAM address 132, 4 bytes
+    uint8_t error = syncRead(132, 4, _motorIDs, presentPositions, _numMotors); // RAM address 132, 4 bytes
     if (error != 0)
     {
         if (_debug)
@@ -398,10 +514,6 @@ uint8_t DynamixelLL::getPresentPosition(int32_t (&presentPositions)[N])
             Serial.print("Error reading Present Position: ");
             Serial.println(error);
         }
-    } else
-    {
-        for (uint8_t i = 0; i < _numMotors; i++)
-            presentPositions[i] = static_cast<int32_t>(temp[i]);
     }
     return error;
 }
@@ -413,8 +525,7 @@ uint8_t DynamixelLL::getCurrentLoad(int16_t (&currentLoad)[N])
     if (checkArraySize(N) != 0)
         return 1;
     
-    uint32_t temp[_numMotors];
-    uint8_t error = syncRead(126, 2, _motorIDs, temp, _numMotors); // RAM address 126, 2 bytes
+    uint8_t error = syncRead(126, 2, _motorIDs, currentLoad, _numMotors); // RAM address 126, 2 bytes
     if (error != 0)
     {
         if (_debug)
@@ -422,10 +533,6 @@ uint8_t DynamixelLL::getCurrentLoad(int16_t (&currentLoad)[N])
             Serial.print("Error reading Current Load: ");
             Serial.println(error);
         }
-    } else
-    {
-        for (uint8_t i = 0; i < _numMotors; i++)
-            currentLoad[i] = static_cast<int16_t>(temp[i]);
     }
     return error;
 }
@@ -436,7 +543,7 @@ uint8_t DynamixelLL::getMovingStatus(MovingStatus (&status)[N])
     if (checkArraySize(N) != 0)
         return 1;
     
-    uint32_t temp[_numMotors];
+    uint8_t temp[_numMotors];
     uint8_t error = syncRead(123, 1, _motorIDs, temp, _numMotors); // RAM address 123, 1 byte
     if (error != 0)
     {
@@ -449,8 +556,8 @@ uint8_t DynamixelLL::getMovingStatus(MovingStatus (&status)[N])
     {
         for (uint8_t i = 0; i < _numMotors; i++)
         {
-            // Extract the status byte (LSB) from the 4-byte value.
-            status[i].raw = temp[i] & 0xFF;
+            // Extract the status byte.
+            status[i].raw = temp[i];
 
             // Decode bits 5 & 4 for Velocity Profile Type.
             uint8_t profileBits = (status[i].raw >> 4) & 0x03;
