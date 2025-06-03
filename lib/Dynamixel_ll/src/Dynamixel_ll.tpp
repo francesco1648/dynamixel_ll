@@ -245,7 +245,6 @@ uint8_t DynamixelLL::setGoalPosition_EPCM(const int32_t (&extendedPositions)[N])
     uint32_t processedPositions[_numMotors];
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
     {
-        // Clamp within valid range: -1,048,575 to +1,048,575 pulses.
         if (extendedPositions[i] > 1048575)
         {
             processedPositions[i] = 1048575;
@@ -342,7 +341,6 @@ uint8_t DynamixelLL::setBaudRate(const uint8_t (&baudRates)[N])
         const uint8_t allowed[] = {0, 1, 2, 3, 4, 5, 6, 7};
         bool valid = false;
         
-        // Check that the provided baudRate code is within the allowed set.
         for (uint8_t j = 0; j < sizeof(allowed) / sizeof(allowed[0]); j++)
         {
             if (allowed[j] == baudRates[i])
@@ -352,7 +350,6 @@ uint8_t DynamixelLL::setBaudRate(const uint8_t (&baudRates)[N])
             }
         }
         
-        // If the baud rate code is not valid, output a debug message and return an error code.
         if (!valid)
         {
             if (_debug)
@@ -378,7 +375,6 @@ uint8_t DynamixelLL::setReturnDelayTime(const uint8_t (&delayTime)[N])
     for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
     {
         processedDelayTime[i] = delayTime[i];
-        // If the provided delayTime exceeds the maximum value, clamp it to 254.
         if (processedDelayTime[i] > 254)
         {
             processedDelayTime[i] = 254;
@@ -429,10 +425,8 @@ uint8_t DynamixelLL::setProfileVelocity(const uint32_t (&profileVelocity)[N])
         bool timeBased = (error == 0) && ((driveMode & 0x04) != 0);
     
         // Select maximum allowed velocity based on profile type.
-        // For time-based profiles, max = 32737; for velocity-based, max = 32767.
         const uint32_t maxProfileVelocity = timeBased ? 32737UL : 32767UL;
         
-        // Clamp the input value if it exceeds the allowed maximum.
         if (profileVelocity > maxProfileVelocity)
         {
             if (_debug)
@@ -463,10 +457,8 @@ uint8_t DynamixelLL::setProfileAcceleration(const uint32_t (&profileAcceleration
         bool timeBased = (error == 0) && ((driveMode & 0x04) != 0);
         
         // Choose the maximum allowed acceleration based on profile type.
-        // For time-based profiles, maximum is 32737; otherwise, 32767.
         const uint32_t maxProfileAcceleration = timeBased ? 32737UL : 32767UL;
         
-        // Clamp the input acceleration if it exceeds this maximum.
         if (profileAcceleration > maxProfileAcceleration)
         {
             if (_debug)

@@ -13,13 +13,13 @@
 
 /**
  * @struct StatusPacket
- * @brief Represents a response packet from a Dynamixel servo.
+ * @brief Represents a response status packet from a Dynamixel servo.
  */
 struct StatusPacket {
     bool valid;         ///< True if the packet is valid.
     uint8_t id;         ///< Servo ID that sent the response.
     uint8_t error;      ///< Error code from the response.
-    uint8_t data[4];    ///< Data bytes (max 4 bytes).
+    uint8_t data[4];    ///< Parameters returned in the response (up to 4 bytes).
     uint8_t dataLength; ///< Number of data bytes returned.
 };
 
@@ -39,7 +39,7 @@ enum VelocityProfileType {
  * @brief Holds the decoded status from the servo's moving status register.
  */
 struct MovingStatus {
-    uint8_t raw;                      ///< Raw status value.
+    uint8_t raw;                      ///< Requested moving status byte (bits 7-0).
     VelocityProfileType profileType;  ///< Velocity profile type (from bits 5-4).
     bool followingError;              ///< True if there's a following error (bit 3).
     bool profileOngoing;              ///< True if the motion profile is in progress (bit 1).
@@ -496,7 +496,7 @@ private:
 
     /**
      * @brief Reads a register from the servo.
-     * @tparam T Type of the value to read (e.g., uint8_t, uint16_t, uint32_t).
+     * @tparam T Type of the value to read.
      * @param address Register address.
      * @param value Reference to store the read value.
      * @param size Number of bytes to read.
@@ -518,7 +518,7 @@ private:
 
     /**
      * @brief Performs a synchronous read from multiple devices.
-     * @tparam T Type of the value to read (e.g., uint8_t, uint16_t, uint32_t).
+     * @tparam T Type of the value to read.
      * @param address Starting register address.
      * @param dataLength Number of bytes to read per device.
      * @param ids Array of device IDs.

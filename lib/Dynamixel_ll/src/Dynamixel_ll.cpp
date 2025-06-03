@@ -270,17 +270,13 @@ bool DynamixelLL::sendPacket(const uint8_t *packet, uint8_t length)
         }
         Serial.println();
     }
-    // Clear any pending data from the serial input buffer.
     while (_serial.available())
-        _serial.read();
+        _serial.read(); // Clear any pending data from the serial input buffer.
 
-    // Write the entire packet in one go.
     size_t bytesWritten = _serial.write(packet, length);
 
-    // Ensure that the transmission is complete.
     _serial.flush();
 
-    // Check that the number of bytes written equals the packet length.
     return (bytesWritten == length);
 }
 
@@ -951,7 +947,7 @@ uint8_t DynamixelLL::setHomingOffset(int32_t offset)
         if (_debug)
             Serial.println("Warning: Homing offset clamped to -1044479.");
     }
-    return writeRegister(20, static_cast<uint32_t>(offset), 4); // EEPROM address 11, 1 byte
+    return writeRegister(20, static_cast<uint32_t>(offset), 4); // EEPROM address 20, 4 bytes
 }
 
 
@@ -969,7 +965,7 @@ uint8_t DynamixelLL::setHomingOffset_A(float offsetAngle)
         if (_debug)
             Serial.println("Warning: Homing offset clamped to -1044479.");
     }
-    return writeRegister(20, static_cast<uint32_t>(offset), 4); // EEPROM address 11, 1 byte
+    return writeRegister(20, static_cast<uint32_t>(offset), 4); // EEPROM address 20, 4 bytes
 }
 
 
@@ -1001,7 +997,6 @@ uint8_t DynamixelLL::setGoalPosition_A_PCM(float angleDegrees)
 
 uint8_t DynamixelLL::setGoalPosition_EPCM(int32_t extendedPosition)
 {
-    // Clamp within valid range: -1,048,575 to +1,048,575 pulses.
     if (extendedPosition > 1048575)
     {
         extendedPosition = 1048575;
@@ -1057,7 +1052,6 @@ uint8_t DynamixelLL::setBaudRate(uint8_t baudRate)
     const uint8_t allowed[] = {0, 1, 2, 3, 4, 5, 6, 7};
     bool valid = false;
 
-    // Check that the provided baudRate code is within the allowed set.
     for (uint8_t i = 0; i < sizeof(allowed) / sizeof(allowed[0]); i++)
     {
         if (allowed[i] == baudRate)
@@ -1067,7 +1061,6 @@ uint8_t DynamixelLL::setBaudRate(uint8_t baudRate)
         }
     }
 
-    // If the baud rate code is not valid, output a debug message and return an error code.
     if (!valid)
     {
         if (_debug)
@@ -1083,7 +1076,6 @@ uint8_t DynamixelLL::setBaudRate(uint8_t baudRate)
 
 uint8_t DynamixelLL::setReturnDelayTime(uint8_t delayTime)
 {
-    // If the provided delayTime exceeds the maximum value, clamp it to 254.
     if (delayTime > 254)
     {
         delayTime = 254;
@@ -1115,10 +1107,8 @@ uint8_t DynamixelLL::setProfileVelocity(uint32_t profileVelocity)
     bool timeBased = (error == 0) && ((driveMode & 0x04) != 0);
 
     // Select maximum allowed velocity based on profile type.
-    // For time-based profiles, max = 32737; for velocity-based, max = 32767.
     const uint32_t maxProfileVelocity = timeBased ? 32737UL : 32767UL;
 
-    // Clamp the input value if it exceeds the allowed maximum.
     if (profileVelocity > maxProfileVelocity)
     {
         if (_debug)
@@ -1140,10 +1130,8 @@ uint8_t DynamixelLL::setProfileAcceleration(uint32_t profileAcceleration)
     bool timeBased = (error == 0) && ((driveMode & 0x04) != 0);
 
     // Choose the maximum allowed acceleration based on profile type.
-    // For time-based profiles, maximum is 32737; otherwise, 32767.
     const uint32_t maxProfileAcceleration = timeBased ? 32737UL : 32767UL;
 
-    // Clamp the input acceleration if it exceeds this maximum.
     if (profileAcceleration > maxProfileAcceleration)
     {
         if (_debug)
@@ -1206,8 +1194,7 @@ uint8_t DynamixelLL::getCurrentLoad(int16_t &currentLoad)
 
 uint8_t DynamixelLL::getMovingStatus(MovingStatus &status)
 {
-    // Read 1 byte from register 123 (stored in a 4-byte variable) from RAM.
-    uint8_t error = readRegister(123, status.raw, 1);
+    uint8_t error = readRegister(123, status.raw, 1); // RAM address 123, 1 byte
     if (error != 0)
     {
         if (_debug)
