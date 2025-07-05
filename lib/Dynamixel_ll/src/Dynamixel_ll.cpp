@@ -525,20 +525,6 @@ bool DynamixelLL::sendSyncWritePacket(const uint8_t* parameters, uint16_t parame
     packet[idx++] = crc & 0xFF;          // CRC LSB
     packet[idx++] = (crc >> 8) & 0xFF;     // CRC MSB
 
-    if (_debug)
-    {
-        Serial.print("Sync Write Packet: ");
-        for (uint16_t i = 0; i < packetSize; ++i)
-        {
-            Serial.print("0x");
-            if (packet[i] < 0x10)
-                Serial.print("0");
-            Serial.print(packet[i], HEX);
-            Serial.print(" ");
-        }
-        Serial.println();
-    }
-
     return sendPacket(packet, packetSize);
 }
 
@@ -591,20 +577,6 @@ bool DynamixelLL::sendSyncReadPacket(uint16_t address, uint8_t dataLength, const
     uint16_t crc = calculateCRC(packet, packetSize - 2);
     packet[idx++] = crc & 0xFF;       // CRC LSB
     packet[idx++] = (crc >> 8) & 0xFF;  // CRC MSB
-
-    if (_debug)
-    {
-        Serial.print("Sync Read Packet: ");
-        for (uint16_t i = 0; i < packetSize; ++i)
-        {
-            Serial.print("0x");
-            if (packet[i] < 0x10)
-                Serial.print("0");
-            Serial.print(packet[i], HEX);
-            Serial.print(" ");
-        }
-        Serial.println();
-    }
 
     return sendPacket(packet, packetSize);
 }
@@ -679,20 +651,6 @@ bool DynamixelLL::sendBulkWritePacket(const uint8_t* parameters, uint16_t parame
     packet[idx++] = crc & 0xFF;          // CRC LSB
     packet[idx++] = (crc >> 8) & 0xFF;     // CRC MSB
 
-    if (_debug)
-    {
-        Serial.print("Bulk Write Packet: ");
-        for (uint16_t i = 0; i < packetSize; ++i)
-        {
-            Serial.print("0x");
-            if (packet[i] < 0x10)
-                Serial.print("0");
-            Serial.print(packet[i], HEX);
-            Serial.print(" ");
-        }
-        Serial.println();
-    }
-
     return sendPacket(packet, packetSize);
 }
 
@@ -745,20 +703,6 @@ bool DynamixelLL::sendBulkReadPacket(const uint8_t* ids, uint16_t* addresses, ui
     uint16_t crc = calculateCRC(packet, packetSize - 2);
     packet[idx++] = crc & 0xFF;       // CRC LSB
     packet[idx++] = (crc >> 8) & 0xFF;  // CRC MSB
-
-    if (_debug)
-    {
-        Serial.print("Bulk Read Packet: ");
-        for (uint16_t i = 0; i < packetSize; ++i)
-        {
-            Serial.print("0x");
-            if (packet[i] < 0x10)
-                Serial.print("0");
-            Serial.print(packet[i], HEX);
-            Serial.print(" ");
-        }
-        Serial.println();
-    }
 
     return sendPacket(packet, packetSize);
 }
