@@ -1106,6 +1106,43 @@ uint8_t DynamixelLL::setProfileAcceleration(uint32_t profileAcceleration)
 }
 
 
+uint8_t DynamixelLL::setGoalVelocity_RPM(float rpm)
+{
+    const float maxRPM = 30.0f; // stimato per 12V
+    if (rpm > maxRPM)
+    {
+        rpm = maxRPM;
+        if (_debug) Serial.println("Warning: RPM clamped to 30 (12V limit).");
+    }
+    else if (rpm < -maxRPM)
+    {
+        rpm = -maxRPM;
+        if (_debug) Serial.println("Warning: RPM clamped to -30 (12V limit).");
+    }
+
+    uint32_t velocityValue = static_cast<uint32_t>(rpm / 0.229f);
+    return writeRegister(104, velocityValue, 4);
+}
+
+
+uint8_t DynamixelLL::getPresentVelocity_RPM(float &rpm)
+{
+    int16_t temp = 0;  // range : -Velocity Limit(44) ~ Velocity Limit(44)
+    uint8_t error = readRegister(128, temp, 4); // address 128, 4 bytes
+    if (error != 0)
+    {
+        if (_debug)
+        {
+            Serial.print("Error reading Present Velocity: ");
+            Serial.println(error, HEX);
+        }
+    } else {
+        rpm = temp * 0.229f;  // convert to RPM in float
+    }
+    return error;
+}
+
+
 uint8_t DynamixelLL::getPresentPosition(int32_t &presentPosition)
 {
     uint8_t error = readRegister(132, presentPosition, 4); // RAM address 132, 4 bytes

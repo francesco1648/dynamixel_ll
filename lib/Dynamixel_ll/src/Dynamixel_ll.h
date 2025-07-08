@@ -67,7 +67,7 @@ public:
      * @brief Initializes the Dynamixel interface.
      * @param baudrate The baud rate (default is 57600).
      */
-    void begin(long baudrate = 57600);
+    void begin(long baudrate = 1000000);
 
     /**
      * @brief Turns off the servo LED.
@@ -381,6 +381,45 @@ public:
      */
     template <uint8_t N>
     uint8_t setProfileAcceleration(const uint32_t (&profileAcceleration)[N]);
+
+    /**
+     * @brief Sets the goal velocity in RPM.
+     * This function sets the desired velocity in revolutions per minute (RPM) for the servo.
+     * The value is converted to the internal unit (1 unit = 0.229 RPM).
+     * @param rpm Desired velocity in RPM.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    uint8_t setGoalVelocity_RPM(float rpm);
+
+    /**
+     * @brief Sets the goal velocity in RPM for multiple motors.
+     * This function sets the desired velocities in revolutions per minute (RPM) for multiple servos.
+     * The values are converted to the internal unit (1 unit = 0.229 RPM).
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param rpmValues Array of desired velocities in RPM for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setGoalVelocity_RPM(const float (&rpmValues)[N]);
+
+    /**
+     * @brief Retrieves the current present velocity in RPM.
+     * This function reads the current velocity of the servo in revolutions per minute (RPM).
+     * @param rpm Reference to store the current velocity in RPM.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+
+    uint8_t getPresentVelocity_RPM(float &rpm);
+
+    /**
+     * @brief Retrieves the current present velocity in RPM for multiple motors.
+     * This function reads the current velocities of multiple servos in revolutions per minute (RPM).
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param rpms Array to store the current velocities in RPM for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t getPresentVelocity_RPM(float (&rpms)[N]);
 
     /**
      * @brief Retrieves the current present position.

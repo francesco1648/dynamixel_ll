@@ -491,6 +491,47 @@ uint8_t DynamixelLL::setProfileAcceleration(const uint32_t (&profileAcceleration
     return syncWrite(118, 4, _motorIDs, processedProfileAcceleration, _numMotors); // RAM address 108, 4 bytes
 }
 
+template <uint8_t N>
+uint8_t DynamixelLL::setGoalVelocity_RPM(const float (&rpmValues)[N])
+{
+    if (checkArraySize(N) != 0)
+        return 1;
+
+    const float maxRPM = 30.0f; // stimato per 12V
+    const float rpmToUnit = 1.0f / 0.229f; // ≈ 4.3668 unità per RPM
+
+    uint32_t processedValues[_numMotors];
+
+    for (uint8_t i = 0; i < _numMotors; i++)
+    {
+        float rpm = rpmValues[i];
+
+        // Clamping dell'RPM
+        if (rpm > maxRPM)
+        {
+            rpm = maxRPM;
+            if (_debug)
+            {
+                Serial.print("Warning: RPM clamped to ");
+                Serial.println(maxRPM);
+            }
+        }
+        else if (rpm < -maxRPM)
+        {
+            rpm = -maxRPM;
+            if (_debug)
+            {
+                Serial.print("Warning: RPM clamped to ");
+                Serial.println(-maxRPM);
+            }
+        }
+
+        int16_t velocityUnits = static_cast<int16_t>(rpm * rpmToUnit);
+        processedValues[i] = static_cast<uint32_t>(velocityUnits);
+    }
+
+    return syncWrite(104, 4, _motorIDs, processedValues, _numMotors); // RAM address 104, 4 bytes
+}
 
 template <uint8_t N>
 uint8_t DynamixelLL::getPresentPosition(int32_t (&presentPositions)[N])
@@ -562,6 +603,28 @@ uint8_t DynamixelLL::getMovingStatus(MovingStatus (&status)[N])
             // Decode bit 0 to determine if target position is reached.
             status[i].inPosition = (status[i].raw & 0x01) != 0;
         }
+    }
+    return error;
+}
+
+template <uint8_t N>
+uint8_t DynamixelLL::getPresentVelocity_RPM(float (&rpms)[N])
+{
+    if (checkArraySize(N) != 0)
+        return 1;
+
+    int16_t temp[_numMotors];
+    uint8_t error = syncRead(128, 4, _motorIDs, temp, _numMotors); // RAM address 128, 4 bytes
+    if (error != 0)
+    {
+        if (_debug)
+        {
+            Serial.print("Error reading Present Velocity: ");
+            Serial.println(error);
+        }
+    } else {
+        for (uint8_t i = 0; i < _numMotors; i++)
+            rpms[i] = static_cast<float>(temp[i]) * 0.229f;  // convert to RPM in float
     }
     return error;
 }
