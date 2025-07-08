@@ -628,3 +628,37 @@ uint8_t DynamixelLL::getPresentVelocity_RPM(float (&rpms)[N])
     }
     return error;
 }
+
+
+template <uint8_t N>
+uint8_t DynamixelLL::getHardwareErrorStatus(HardwareErrorStatus (&status)[N])
+{
+    if (checkArraySize(N) != 0)
+        return 1;
+    
+    uint8_t temp[_numMotors];
+    uint8_t error = syncRead(70, 1, _motorIDs, temp, _numMotors); // RAM address 70, 1 byte
+    if (error != 0)
+    {
+        if (_debug)
+        {
+            Serial.print("Error reading Hardware Error Status: ");
+            Serial.println(error);
+        }
+    } else
+    {
+        for (uint8_t i = 0; i < _numMotors; i++)
+        {
+            // Extract the status byte.
+            status[i].raw = temp[i];
+
+            // Parse individual bits
+            status[i].inputVoltageError = (status[i].raw & 0x01) != 0;
+            status[i].overheatingError = ((status[i].raw >> 2) & 0x01) != 0;
+            status[i].encoderError = ((status[i].raw >> 3) & 0x01) != 0;
+            status[i].electricalShockError = ((status[i].raw >> 4) & 0x01) != 0;
+            status[i].overloadError = ((status[i].raw >> 5) & 0x01) != 0;
+        }
+    }
+    return error;
+}

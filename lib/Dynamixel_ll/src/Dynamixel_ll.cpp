@@ -1108,7 +1108,7 @@ uint8_t DynamixelLL::setProfileAcceleration(uint32_t profileAcceleration)
 
 uint8_t DynamixelLL::setGoalVelocity_RPM(float rpm)
 {
-    const float maxRPM = 30.0f; // stimato per 12V
+    const float maxRPM = 30.0f; // for 12V
     if (rpm > maxRPM)
     {
         rpm = maxRPM;
@@ -1194,6 +1194,27 @@ uint8_t DynamixelLL::getMovingStatus(MovingStatus &status)
         status.profileOngoing = ((status.raw >> 1) & 0x01) != 0;
         // Decode bit 0 to determine if target position is reached.
         status.inPosition = (status.raw & 0x01) != 0;
+    }
+    return error;
+}
+
+uint8_t DynamixelLL::getHardwareErrorStatus(HardwareErrorStatus &status)
+{
+    uint8_t error = readRegister(70, status.raw, 1);  // RAM address 70, 1 byte
+    if (error != 0)
+    {
+        if (_debug)
+        {
+            Serial.print("Error reading Hardware Error Status, error code: ");
+            Serial.println(error, HEX);
+        }
+    } else {
+        // Parse individual bits
+        status.inputVoltageError = (status.raw & 0x01) != 0;
+        status.overheatingError = ((status.raw >> 2) & 0x01) != 0;
+        status.encoderError = ((status.raw >> 3) & 0x01) != 0;
+        status.electricalShockError = ((status.raw >> 4) & 0x01) != 0;
+        status.overloadError = ((status.raw >> 5) & 0x01) != 0;
     }
     return error;
 }

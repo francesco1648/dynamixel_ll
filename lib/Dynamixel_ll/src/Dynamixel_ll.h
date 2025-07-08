@@ -1,5 +1,6 @@
 // e-manual for DYNAMIXEL protocol 2.0: https://emanual.robotis.com/docs/en/dxl/protocol2/
-// e-Manual for DYNAMIXEL XL430-W250: https://emanual.robotis.com/docs/en/dxl/x/xl430-w250/
+// e-manual for DYNAMIXEL XL430-W250: https://emanual.robotis.com/docs/en/dxl/x/xl430-w250/
+// e-manual for DYNAMIXEL XM540-W270-T/R: https://emanual.robotis.com/docs/en/dxl/x/xm540-w270/#goal-position
 
 #ifndef DYNAMIXEL_LL_H
 #define DYNAMIXEL_LL_H
@@ -45,6 +46,16 @@ struct MovingStatus {
     bool profileOngoing;              ///< True if the motion profile is in progress (bit 1).
     bool inPosition;                  ///< True if the actuator is in position (bit 0).
 };
+
+struct HardwareErrorStatus {
+    uint8_t raw;                 ///< Requested 8-bit value (bits 7-0).
+    bool inputVoltageError;      ///< Bit 0
+    bool overheatingError;       ///< Bit 2
+    bool encoderError;           ///< Bit 3
+    bool electricalShockError;   ///< Bit 4
+    bool overloadError;          ///< Bit 5
+};
+
 
 /**
  * @class DynamixelLL
@@ -468,6 +479,22 @@ public:
      */
     template <uint8_t N>
     uint8_t getMovingStatus(MovingStatus (&status)[N]);
+
+    /**
+     * @brief Retrieves the hardware error status of the servo.
+     * @param status Reference to store the decoded hardware error status.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    uint8_t getHardwareErrorStatus(HardwareErrorStatus &status);
+
+    /**
+     * @brief Retrieves the hardware error status for multiple motors.
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param status Array to store the decoded hardware error status for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t getHardwareErrorStatus(HardwareErrorStatus (&status)[N]);
 
     /**
      * @brief Sends a ping instruction to the Dynamixel servo.
