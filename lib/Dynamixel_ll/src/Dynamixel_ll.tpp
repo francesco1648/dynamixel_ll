@@ -533,6 +533,37 @@ uint8_t DynamixelLL::setGoalVelocity_RPM(const float (&rpmValues)[N])
     return syncWrite(104, 4, _motorIDs, processedValues, _numMotors); // RAM address 104, 4 bytes
 }
 
+
+template <uint8_t N>
+uint8_t DynamixelLL::setShutdownConfig(const bool (&inputVoltageError)[N],
+                          const bool (&overheatingError)[N],
+                          const bool (&motorEncoderError)[N],
+                          const bool (&electricalShockError)[N],
+                          const bool (&overloadError)[N])
+{
+    if (checkArraySize(N) != 0)
+        return 1;
+
+    uint32_t processedconfigs[_numMotors];
+    for (uint8_t i = 0; i < _numMotors; i++) // Iterate through all motors
+    {
+        uint8_t config = 0;
+        if (inputVoltageError[i])
+            config |= 0x01;
+        if (overheatingError[i])
+            config |= 0x04;
+        if (motorEncoderError[i])
+            config |= 0x08;
+        if (electricalShockError[i])
+            config |= 0x10;
+        if (overloadError[i])
+            config |= 0x20;
+        processedconfigs[i] = config;
+    }
+    return syncWrite(63, 1, _motorIDs, processedconfigs, _numMotors); // EEPROM address 63, 1 byte
+}
+
+
 template <uint8_t N>
 uint8_t DynamixelLL::getPresentPosition(int32_t (&presentPositions)[N])
 {
@@ -655,7 +686,7 @@ uint8_t DynamixelLL::getHardwareErrorStatus(HardwareErrorStatus (&status)[N])
             // Parse individual bits
             status[i].inputVoltageError = (status[i].raw & 0x01) != 0;
             status[i].overheatingError = ((status[i].raw >> 2) & 0x01) != 0;
-            status[i].encoderError = ((status[i].raw >> 3) & 0x01) != 0;
+            status[i].motorEncoderError = ((status[i].raw >> 3) & 0x01) != 0;
             status[i].electricalShockError = ((status[i].raw >> 4) & 0x01) != 0;
             status[i].overloadError = ((status[i].raw >> 5) & 0x01) != 0;
         }

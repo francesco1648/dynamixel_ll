@@ -1124,6 +1124,26 @@ uint8_t DynamixelLL::setGoalVelocity_RPM(float rpm)
     return writeRegister(104, velocityValue, 4);
 }
 
+uint8_t DynamixelLL::setShutdownConfig(bool inputVoltageError,
+                                       bool overheatingError,
+                                       bool motorEncoderError,
+                                       bool electricalShockError,
+                                       bool overloadError)
+{
+    uint8_t config = 0;
+    if (inputVoltageError)
+        config |= 0x01;
+    if (overheatingError)
+        config |= 0x04;
+    if (motorEncoderError)
+        config |= 0x08;
+    if (electricalShockError)
+        config |= 0x10;
+    if (overloadError)
+        config |= 0x20;
+    return writeRegister(63, config, 1); // EEPROM address 63, 1 byte
+}
+
 
 uint8_t DynamixelLL::getPresentVelocity_RPM(float &rpm)
 {
@@ -1212,7 +1232,7 @@ uint8_t DynamixelLL::getHardwareErrorStatus(HardwareErrorStatus &status)
         // Parse individual bits
         status.inputVoltageError = (status.raw & 0x01) != 0;
         status.overheatingError = ((status.raw >> 2) & 0x01) != 0;
-        status.encoderError = ((status.raw >> 3) & 0x01) != 0;
+        status.motorEncoderError = ((status.raw >> 3) & 0x01) != 0;
         status.electricalShockError = ((status.raw >> 4) & 0x01) != 0;
         status.overloadError = ((status.raw >> 5) & 0x01) != 0;
     }

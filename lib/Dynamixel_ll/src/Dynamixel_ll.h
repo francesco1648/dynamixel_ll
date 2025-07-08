@@ -51,7 +51,7 @@ struct HardwareErrorStatus {
     uint8_t raw;                 ///< Requested 8-bit value (bits 7-0).
     bool inputVoltageError;      ///< Bit 0
     bool overheatingError;       ///< Bit 2
-    bool encoderError;           ///< Bit 3
+    bool motorEncoderError;           ///< Bit 3
     bool electricalShockError;   ///< Bit 4
     bool overloadError;          ///< Bit 5
 };
@@ -414,12 +414,45 @@ public:
     uint8_t setGoalVelocity_RPM(const float (&rpmValues)[N]);
 
     /**
+     * @brief Set the shutdown configuration to detect the chosen error status.
+     * 
+     * @param inputVoltageError true to enable input voltage error detection.
+     * @param overheatingError true to enable overheating error detection.
+     * @param motorEncoderError true to enable encoder error detection.
+     * @param electricalShockError true to enable electrical shock error detection.
+     * @param overloadError true to enable overload error detection.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    uint8_t setShutdownConfig(bool inputVoltageError,
+                              bool overheatingError,
+                              bool motorEncoderError,
+                              bool electricalShockError,
+                              bool overloadError);
+    
+    /**
+     * @brief Set the Shutdown Config object
+     * 
+     * @tparam N Size of the input array, must match the number of motors in sync.
+     * @param inputVoltageError array for input voltage error detection flags for each motor.
+     * @param overheatingError array for overheating error detection flags for each motor.
+     * @param motorEncoderError array for encoder error detection flags for each motor.
+     * @param electricalShockError array for electrical shock error detection flags for each motor.
+     * @param overloadError array for overload error detection flags for each motor.
+     * @return uint8_t 0 on success, nonzero on error.
+     */
+    template <uint8_t N>
+    uint8_t setShutdownConfig(const bool (&inputVoltageError)[N],
+                              const bool (&overheatingError)[N],
+                              const bool (&motorEncoderError)[N],
+                              const bool (&electricalShockError)[N],
+                              const bool (&overloadError)[N]);
+
+    /**
      * @brief Retrieves the current present velocity in RPM.
      * This function reads the current velocity of the servo in revolutions per minute (RPM).
      * @param rpm Reference to store the current velocity in RPM.
      * @return uint8_t 0 on success, nonzero on error.
      */
-
     uint8_t getPresentVelocity_RPM(float &rpm);
 
     /**
