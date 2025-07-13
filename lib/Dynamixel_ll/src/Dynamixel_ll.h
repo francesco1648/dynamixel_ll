@@ -47,11 +47,15 @@ struct MovingStatus {
     bool inPosition;                  ///< True if the actuator is in position (bit 0).
 };
 
+/**
+ * @struct HardwareErrorStatus
+ * @brief Holds the decoded hardware error status from the servo.
+ */
 struct HardwareErrorStatus {
     uint8_t raw;                 ///< Requested 8-bit value (bits 7-0).
     bool inputVoltageError;      ///< Bit 0
     bool overheatingError;       ///< Bit 2
-    bool motorEncoderError;           ///< Bit 3
+    bool motorEncoderError;      ///< Bit 3
     bool electricalShockError;   ///< Bit 4
     bool overloadError;          ///< Bit 5
 };
@@ -78,7 +82,7 @@ public:
      * @brief Initializes the Dynamixel interface.
      * @param baudrate The baud rate (default is 57600).
      */
-    void begin(long baudrate = 1000000);
+    void begin(long baudrate = 57600);
 
     /**
      * @brief Turns off the servo LED.
